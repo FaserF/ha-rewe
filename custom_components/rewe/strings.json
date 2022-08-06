@@ -1,0 +1,22 @@
+{
+  "title": "Rewe",
+  "config": {
+    "step": {
+      "user": {
+        "description": "Get your REWE market id from https://www.rewe.de/",
+        "title": "Rewe",
+        "data": {
+          "market_id": "Rewe Market ID",
+          "scan_interval": "Scan Interval"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot connect",
+      "unknown": "Unknown Error"
+    },
+    "abort": {
+      "already_configured": "This rewe market ID is already configured"
+    }
+  }
+}
