@@ -10,8 +10,9 @@ import homeassistant.helpers.config_validation as cv
 
 from .const import (  # pylint: disable=unused-import
     CONF_MARKET_ID,
+    CONF_SCAN_INTERVAL
 )
-DOMAIN = "foodsharing"
+DOMAIN = "rewe"
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -27,18 +28,18 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors = {}
 
         if user_input is not None:
-            await self.async_set_unique_id(user_input[CONF_LATITUDE_FS])
+            await self.async_set_unique_id(user_input[CONF_MARKET_ID])
             self._abort_if_unique_id_configured()
-            return self.async_create_entry(title=user_input[CONF_LATITUDE_FS], data=user_input)
+            return self.async_create_entry(title=user_input[CONF_MARKET_ID], data=user_input)
 
             _LOGGER.debug(
-                "Initialized new Foodsharing with id: {unique_id}"
+                "Initialized new Rewe Sensor with id: {unique_id}"
             )
 
         data_schema = vol.Schema(
             {
-                vol.Required(CONF_MARKET_ID, default="my@email.de"): str,
-                vol.Required(CONF_SCAN_INTERVAL, default=30): cv.positive_int,
+                vol.Required(CONF_MARKET_ID, default="123456"): str,
+                vol.Required(CONF_SCAN_INTERVAL, default=180): cv.positive_int,
             },
         )
 

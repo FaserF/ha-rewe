@@ -1,10 +1,17 @@
-"""Foodsharing.de Custom Component."""
+"""Rewe.de Custom Component."""
 import asyncio
 import logging
+from datetime import timedelta
 
 from homeassistant import config_entries, core
 
-from .const import DOMAIN
+from homeassistant.helpers.update_coordinator import (
+    CoordinatorEntity,
+    DataUpdateCoordinator,
+    UpdateFailed,
+)
+
+from .const import DOMAIN,CONF_SCAN_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,6 +32,26 @@ async def async_setup_entry(
     hass.async_create_task(
         hass.config_entries.async_forward_entry_setup(entry, "sensor")
     )
+
+    config = hass.data[DOMAIN][entry.entry_id]
+    async def async_update_data():
+        """Fetch data from Foodsharing."""
+        async with async_timeout.timeout(scan_interval - 1):
+            await hass.async_add_executor_job(lambda: data.update())
+
+            if not data.state:
+                raise UpdateFailed(f"Error fetching {entry.title} Rewe state")
+
+            return data.state
+
+    coordinator = DataUpdateCoordinator(
+        hass,
+        _LOGGER,
+        name=f"{entry.title} Rewe state",
+        update_method=async_update_data,
+        update_interval=timedelta(seconds=config[CONF_SCAN_INTERVAL]),
+    )
+
     return True
 
 

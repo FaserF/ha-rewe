@@ -1,12 +1,13 @@
 {
-  "codeowners": ["@faserf"],
+  "codeowners": [
+    "@faserf"
+  ],
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/faserf/ha-rewe#readme",
   "issue_tracker": "https://github.com/faserf/ha-rewe/issues",
   "domain": "rewe",
-  "name": "Rewe Discounds",
-  "requirements": ["git+https://github.com/foo-git/rewe-discounts.git@rewe_discounts==v2.3"],
+  "name": "Rewe Discounts",
   "version": "1.0.0",
   "iot_class": "cloud_polling"
 }
