@@ -10,9 +10,10 @@ import sys
 import argparse
 import time
 import traceback
+import cloudscraper
 
 from homeassistant import config_entries, core
-from homeassistant.helpers import aiohttp_client
+#rom homeassistant.helpers import aiohttp_client
 from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import ATTR_ATTRIBUTION
 import homeassistant.helpers.config_validation as cv
@@ -65,6 +66,7 @@ class ReweSensor(Entity):
         self._name = f"Rewe {self.market_id}"
         self._state = None
         self._available = True
+        self._session = cloudscraper.create_scraper()
 
     @property
     def name(self) -> str:
@@ -96,91 +98,68 @@ class ReweSensor(Entity):
     @property
     def unit_of_measurement(self):
         """Return unit of measurement."""
-        return "baskets"
+        return "date"
+
+    @property
+    def session(self):
+        return self._session
 
     @property
     def extra_state_attributes(self):
         """Return extra attributes."""
         return self.attrs
 
-    async def async_update(self):
-        try:
-            market_id = self.market_id
+    async def async_wait_session(self, hass):
+        url = 'https://mobile-api.rewe.de/api/v3/all-offers?marketCode=' + market_id
+        data = await hass.async_add_executor_job(self._session.get(url).json())
+        _LOGGER.debug(f"Fetching URL: '{url}'")
+        _LOGGER.debug(f"Getting Discounts: '{response}")
 
-            # Below taken from https://github.com/foo-git/rewe-discounts/blob/master/rewe_discounts/rewe_discounts.py and modified to work as a HA Integration:
-            # Here we differentiate between mode "print market IDs" and mode "print offers of selected market"
-            try:
-                assert int(market_id)
-                assert len(market_id) >= 6
-                assert len(market_id) <= 7
-            except (ValueError, AssertionError):
-                self._available = False
-                _LOGGER.exception(f"Wrong market ID. Please provide a 6 or 7 digit market ID instead of: {self.market_id}")
+        # Reformat categories for easier access. ! are highlighted products, and ? are uncategorized ones.
+        # Order of definition here determines printing order later on.
+        categories = data['categories']
+        categories_id_mapping = {'!': 'Vorgemerkte Produkte'}
+        categorized_products = {'!': []}
+        for n in range(0, len(categories)):
+            if 'PAYBACK' in categories[n]['title']:  # ignore payback offers
+                continue
+            categories_id_mapping.update({n: categories[n]['title']})
+            categorized_products.update({n: []})
+        categories_id_mapping.update({'?': 'Unbekannte Kategorie'})
+        categorized_products.update({'?': []})
 
-            # Craft query and load JSON stuff.
-            url = 'https://mobile-api.rewe.de/api/v3/all-offers?marketCode=' + market_id
-            data = []
-            try:
-                with async_timeout.timeout(30):
-                    response = await aiohttp_client.async_get_clientsession(self.hass).get(url)
-                    _LOGGER.debug(f"Fetching URL: '{url}'")
-                    _LOGGER.debug(f"Getting Discounts: '{response.status}' {response.text} - {response.headers}")
-            except:
-                self._available = False
-                _LOGGER.exception(f"Cannot retrieve discounts for: {self.market_id} - Maybe a typo or the server rejected the request.")
+        # Get maximum valid date of offers
+        offers_valid_date = time.strftime('%Y-%m-%d', time.localtime(data['untilDate'] / 1000))
 
-            if response.status == 200:
-                raw_html = await response.text()
-                data = json.loads(raw_html)
-            else:
-                self._available = False
-                _LOGGER.exception(f"Error '{response.status}' - Cannot retrieve data for market: '{self.market_id}'")
-
-            # Reformat categories for easier access. ! are highlighted products, and ? are uncategorized ones.
-            # Order of definition here determines printing order later on.
-            categories = data[int('categories')]
-            categories_id_mapping = {'!': 'Vorgemerkte Produkte'}
-            categorized_products = {'!': []}
-            for n in range(0, len(categories)):
-                if 'PAYBACK' in categories[n]['title']:  # ignore payback offers
-                    continue
-                categories_id_mapping.update({n: categories[n]['title']})
-                categorized_products.update({n: []})
-            categories_id_mapping.update({'?': 'Unbekannte Kategorie'})
-            categorized_products.update({'?': []})
-
-            # Get maximum valid date of offers
-            offers_valid_date = time.strftime('%Y-%m-%d', time.localtime(data['untilDate'] / 1000))
-
-            # Stores product data in a dict with categories as keys for a sorted printing experience.
-            # Sometimes the data from Rewe is mixed/missing, so that's why we need all those try/excepts.
-            n = 0
-            for category in data['categories']:
-                if 'PAYBACK' in category['title']:  # ignore payback offers
-                    n += 1
-                    continue
-                for item in category['offers']:
-                    NewProduct = Product()
-                    try:
-                        NewProduct.name = item['title']
-                        NewProduct.price = item['priceData']['price']
-                        NewProduct.base_price = item['subtitle']
-                    except KeyError:  # sometimes an item is blank or does not contain price information, skip it
-                        continue
-                    try:
-                        NewProduct.category = n
-                    except KeyError:  # if category not defined in _meta, assign to unknown category
-                        NewProduct.category = '?'
-
-                    # Move product into the respective category list ...
-                    try:
-                        categorized_products[n].append(NewProduct)
-                    except KeyError:
-                        categorized_products['?'].append(NewProduct)
-                    # ... but highlighted products are the only ones in two categories
-                    if any(x in NewProduct.name for x in product_highlights):
-                        categorized_products['!'].append(NewProduct)
+        # Stores product data in a dict with categories as keys for a sorted printing experience.
+        # Sometimes the data from Rewe is mixed/missing, so that's why we need all those try/excepts.
+        n = 0
+        for category in data['categories']:
+            if 'PAYBACK' in category['title']:  # ignore payback offers
                 n += 1
+                continue
+            for item in category['offers']:
+                NewProduct = Product()
+                try:
+                    NewProduct.name = item['title']
+                    NewProduct.price = item['priceData']['price']
+                    NewProduct.base_price = item['subtitle']
+                except KeyError:  # sometimes an item is blank or does not contain price information, skip it
+                    continue
+                try:
+                    NewProduct.category = n
+                except KeyError:  # if category not defined in _meta, assign to unknown category
+                    NewProduct.category = '?'
+
+                # Move product into the respective category list ...
+                try:
+                    categorized_products[n].append(NewProduct)
+                except KeyError:
+                    categorized_products['?'].append(NewProduct)
+                # ... but highlighted products are the only ones in two categories
+                if any(x in NewProduct.name for x in product_highlights):
+                    categorized_products['!'].append(NewProduct)
+            n += 1
 
             #name = name.replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
             #price = price.replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
@@ -195,6 +174,31 @@ class ReweSensor(Entity):
             self.attrs[ATTR_ATTRIBUTION] = f"last updated {datetime.now()} \n{ATTRIBUTION}"
             self._state = offers_valid_date
             self._available = True
+
+    async def async_update(self):
+
+        try:
+            market_id = self.market_id
+            hass = self.hass
+
+            # Below taken from https://github.com/foo-git/rewe-discounts/blob/master/rewe_discounts/rewe_discounts.py and modified to work as a HA Integration:
+            # Here we differentiate between mode "print market IDs" and mode "print offers of selected market"
+            try:
+                assert int(market_id)
+                assert len(market_id) >= 6
+                assert len(market_id) <= 7
+            except (ValueError, AssertionError):
+                self._available = False
+                _LOGGER.exception(f"Wrong market ID. Please provide a 6 or 7 digit market ID instead of: {self.market_id}")
+
+            # Craft query and load JSON stuff.
+            try:
+                with async_timeout.timeout(30):
+                    response = self.async_wait_session(hass)
+            except:
+                self._available = False
+                _LOGGER.exception(f"Cannot retrieve discounts for: {self.market_id} - Maybe a typo or the server rejected the request.")
+
         except:
             self._available = False
             _LOGGER.exception(f"Cannot retrieve data for: '{self.market_id}'")
