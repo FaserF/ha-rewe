@@ -10,15 +10,14 @@ Gets discounts and highlights from the [rewe.de API](https://shop.rewe.de/mc/api
 This integration provides the following informations with a refresh rate of 30 minutes until now:
 
 
-Sensors: 
+Sensors:
 
 - sensor.marketid: Discount Date
 
-Sensor Attributes: 
+Sensor Attributes:
 
 - market_id: Your rewe market id
 - discounts: Discounts currently valid
-- highlights: Highlights from rewe
 
 ## Installation
 ### 1. Using HACS (recommended way)
@@ -36,23 +35,27 @@ If you use this method, your component will always update to the latest version.
 ### 2. Manual
 Place a copy of:
 
-[`__init__.py`](custom_components/rewe) at `<config>/custom_components/`  
+[`__init__.py`](custom_components/rewe) at `<config>/custom_components/`
 
 where `<config>` is your Home Assistant configuration directory.
 
 >__NOTE__: Do not download the file by using the link above directly. Rather, click on it, then on the page that comes up use the `Raw` button.
 
-## Configuration 
+## Configuration
 
 Go to Configuration -> Integrations and click on "add integration". Then search for Rewe.
 
 ### Getting the rewe market ID
+1. Go to the [REWE Marktsuche](https://www.rewe.de/marktsuche)
+2. Enter your city or PLZ and choose your desired REWE
+3. Select "Marktinfos"
+4. Copy the marked id from the URL
 
 <img src="images/market_id.png" alt="Rewe.de Sensor" width="300px">
 
 ### Configuration Variables
 - **market_id**: Enter your rewe market id
-- **refresh time**: Custom refresh time interval in minutes (doesnt work until now!!!)
+- **update interval**: Custom refresh time interval in minutes (doesnt work until now!!!)
 
 ## Bug reporting
 Open an issue over at [github issues](https://github.com/FaserF/ha-rewe/issues). Please prefer sending over a log with debugging enabled.
@@ -60,8 +63,9 @@ Open an issue over at [github issues](https://github.com/FaserF/ha-rewe/issues).
 To enable debugging enter the following in your configuration.yaml
 
 ```yaml
-logs:
-    custom_components.rewe: debug
+logger:
+    logs:
+        custom_components.rewe: debug
 ```
 
 ## Thanks to

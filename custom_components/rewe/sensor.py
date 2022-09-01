@@ -4,9 +4,12 @@ import logging
 import re
 import json
 from typing import Any, Callable, Dict, Optional
-from rewe_discounts import rewe_discounts
 
 import async_timeout
+import sys
+import argparse
+import time
+import traceback
 
 from homeassistant import config_entries, core
 from homeassistant.helpers import aiohttp_client
@@ -25,13 +28,6 @@ from .const import (
     CONF_MARKET_ID,
     CONF_SCAN_INTERVAL,
     ATTR_DISCOUNTS,
-    ATTR_HIGHLIGHTS,
-    ATTR_DISCOUNT_NAME,
-    ATTR_DISCOUNT_PRICE,
-    ATTR_DISCOUNT_DESCRIPTION,
-    ATTR_HIGHLIGHT_NAME,
-    ATTR_HIGHLIGHT_PRICE,
-    ATTR_HIGHLIGHT_DESCRIPTION,
 
     DOMAIN,
 )
@@ -109,29 +105,97 @@ class ReweSensor(Entity):
 
     async def async_update(self):
         try:
-            discounts = []
-            highlights = []
+            market_id = self.market_id
 
-            discounts.append(
-                {
-                    ATTR_DISCOUNT_NAME: "unavailable",
-                    ATTR_DISCOUNT_PRICE: "unavailable",
-                    ATTR_DISCOUNT_DESCRIPTION: "unavailable"
-                }
-            )
+            # Below taken from https://github.com/foo-git/rewe-discounts/blob/master/rewe_discounts/rewe_discounts.py and modified to work as a HA Integration:
+            # Here we differentiate between mode "print market IDs" and mode "print offers of selected market"
+            try:
+                assert int(market_id)
+                assert len(market_id) >= 6
+                assert len(market_id) <= 7
+            except (ValueError, AssertionError):
+                self._available = False
+                _LOGGER.exception(f"Wrong market ID. Please provide a 6 or 7 digit market ID instead of: {self.market_id}")
 
-            highlights.append(
-                {
-                    ATTR_HIGHLIGHT_NAME: "unavailable",
-                    ATTR_HIGHLIGHT_PRICE: "unavailable",
-                    ATTR_HIGHLIGHT_DESCRIPTION: "unavailable"
-                }
-            )
-            self.attrs[ATTR_DISCOUNTS] = discounts
-            self.attrs[ATTR_HIGHLIGHTS] = highlights
+            # Craft query and load JSON stuff.
+            url = 'https://mobile-api.rewe.de/api/v3/all-offers?marketCode=' + market_id
+            data = []
+            try:
+                with async_timeout.timeout(30):
+                    response = await aiohttp_client.async_get_clientsession(self.hass).get(url)
+                    _LOGGER.debug(f"Fetching URL: '{url}'")
+                    _LOGGER.debug(f"Getting Discounts: '{response.status}' {response.text} - {response.headers}")
+            except:
+                self._available = False
+                _LOGGER.exception(f"Cannot retrieve discounts for: {self.market_id} - Maybe a typo or the server rejected the request.")
+
+            if response.status == 200:
+                raw_html = await response.text()
+                data = json.loads(raw_html)
+            else:
+                self._available = False
+                _LOGGER.exception(f"Error '{response.status}' - Cannot retrieve data for market: '{self.market_id}'")
+
+            # Reformat categories for easier access. ! are highlighted products, and ? are uncategorized ones.
+            # Order of definition here determines printing order later on.
+            categories = data[int('categories')]
+            categories_id_mapping = {'!': 'Vorgemerkte Produkte'}
+            categorized_products = {'!': []}
+            for n in range(0, len(categories)):
+                if 'PAYBACK' in categories[n]['title']:  # ignore payback offers
+                    continue
+                categories_id_mapping.update({n: categories[n]['title']})
+                categorized_products.update({n: []})
+            categories_id_mapping.update({'?': 'Unbekannte Kategorie'})
+            categorized_products.update({'?': []})
+
+            # Get maximum valid date of offers
+            offers_valid_date = time.strftime('%Y-%m-%d', time.localtime(data['untilDate'] / 1000))
+
+            # Stores product data in a dict with categories as keys for a sorted printing experience.
+            # Sometimes the data from Rewe is mixed/missing, so that's why we need all those try/excepts.
+            n = 0
+            for category in data['categories']:
+                if 'PAYBACK' in category['title']:  # ignore payback offers
+                    n += 1
+                    continue
+                for item in category['offers']:
+                    NewProduct = Product()
+                    try:
+                        NewProduct.name = item['title']
+                        NewProduct.price = item['priceData']['price']
+                        NewProduct.base_price = item['subtitle']
+                    except KeyError:  # sometimes an item is blank or does not contain price information, skip it
+                        continue
+                    try:
+                        NewProduct.category = n
+                    except KeyError:  # if category not defined in _meta, assign to unknown category
+                        NewProduct.category = '?'
+
+                    # Move product into the respective category list ...
+                    try:
+                        categorized_products[n].append(NewProduct)
+                    except KeyError:
+                        categorized_products['?'].append(NewProduct)
+                    # ... but highlighted products are the only ones in two categories
+                    if any(x in NewProduct.name for x in product_highlights):
+                        categorized_products['!'].append(NewProduct)
+                n += 1
+
+            #name = name.replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
+            #price = price.replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
+            #discount = discount.replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
+            #discount_valid = discount_valid.replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
+            #base_price = base_price.replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
+            category = category.replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
+            #currency = currency.replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
+            #description = description.replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
+
+            self.attrs[ATTR_DISCOUNTS] = categorized_products
             self.attrs[ATTR_ATTRIBUTION] = f"last updated {datetime.now()} \n{ATTRIBUTION}"
-            self._state = baskets_count
+            self._state = offers_valid_date
             self._available = True
         except:
             self._available = False
             _LOGGER.exception(f"Cannot retrieve data for: '{self.market_id}'")
+

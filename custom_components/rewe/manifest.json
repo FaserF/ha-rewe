@@ -6,6 +6,9 @@
   "dependencies": [],
   "documentation": "https://github.com/faserf/ha-rewe#readme",
   "issue_tracker": "https://github.com/faserf/ha-rewe/issues",
+  "requirements": [
+    "cloudscraper==1.2.64"
+  ],
   "domain": "rewe",
   "name": "Rewe Discounts",
   "version": "1.0.0",
