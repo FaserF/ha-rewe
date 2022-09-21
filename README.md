@@ -12,12 +12,15 @@ This integration provides the following informations until now:
 
 Sensors:
 
-- sensor.marketid: Discount Date
+- sensor.marketid: Valid until Discount Date
 
 Sensor Attributes:
 
 - market_id: Your rewe market id
 - discounts: Discounts currently valid
+    - attribute product name
+    - attribuite discount price
+    - attribute picture link
 
 ## Installation
 ### 1. Using HACS (recommended way)
