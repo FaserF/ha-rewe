@@ -1,4 +1,4 @@
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
 # Rewe.de Homeassistant Discounts Sensor
 Gets discounts and highlights from the [rewe.de API](https://shop.rewe.de/mc/api/markets-stationary).
 
@@ -7,7 +7,7 @@ Gets discounts and highlights from the [rewe.de API](https://shop.rewe.de/mc/api
 
 
 
-This integration provides the following informations with a refresh rate of 30 minutes until now:
+This integration provides the following informations until now:
 
 
 Sensors:

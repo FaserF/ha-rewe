@@ -29,6 +29,10 @@ from .const import (
     CONF_MARKET_ID,
     CONF_SCAN_INTERVAL,
     ATTR_DISCOUNTS,
+    ATTR_DISCOUNT_TITLE,
+    ATTR_DISCOUNT_PRICE,
+    ATTR_BASE_PRICE,
+    ATTR_PICTURE,
 
     DOMAIN,
 )
@@ -86,7 +90,7 @@ class ReweSensor(Entity):
 
     @property
     def icon(self) -> str:
-        return "mdi:basket-unfill"
+        return "mdi:cart-percent"
 
     @property
     def state(self) -> Optional[str]:
@@ -108,73 +112,7 @@ class ReweSensor(Entity):
     def extra_state_attributes(self):
         """Return extra attributes."""
         return self.attrs
-
-    async def async_wait_session(self, hass):
-        url = 'https://mobile-api.rewe.de/api/v3/all-offers?marketCode=' + market_id
-        data = await hass.async_add_executor_job(self._session.get(url).json())
-        _LOGGER.debug(f"Fetching URL: '{url}'")
-        _LOGGER.debug(f"Getting Discounts: '{response}")
-
-        # Reformat categories for easier access. ! are highlighted products, and ? are uncategorized ones.
-        # Order of definition here determines printing order later on.
-        categories = data['categories']
-        categories_id_mapping = {'!': 'Vorgemerkte Produkte'}
-        categorized_products = {'!': []}
-        for n in range(0, len(categories)):
-            if 'PAYBACK' in categories[n]['title']:  # ignore payback offers
-                continue
-            categories_id_mapping.update({n: categories[n]['title']})
-            categorized_products.update({n: []})
-        categories_id_mapping.update({'?': 'Unbekannte Kategorie'})
-        categorized_products.update({'?': []})
-
-        # Get maximum valid date of offers
-        offers_valid_date = time.strftime('%Y-%m-%d', time.localtime(data['untilDate'] / 1000))
-
-        # Stores product data in a dict with categories as keys for a sorted printing experience.
-        # Sometimes the data from Rewe is mixed/missing, so that's why we need all those try/excepts.
-        n = 0
-        for category in data['categories']:
-            if 'PAYBACK' in category['title']:  # ignore payback offers
-                n += 1
-                continue
-            for item in category['offers']:
-                NewProduct = Product()
-                try:
-                    NewProduct.name = item['title']
-                    NewProduct.price = item['priceData']['price']
-                    NewProduct.base_price = item['subtitle']
-                except KeyError:  # sometimes an item is blank or does not contain price information, skip it
-                    continue
-                try:
-                    NewProduct.category = n
-                except KeyError:  # if category not defined in _meta, assign to unknown category
-                    NewProduct.category = '?'
-
-                # Move product into the respective category list ...
-                try:
-                    categorized_products[n].append(NewProduct)
-                except KeyError:
-                    categorized_products['?'].append(NewProduct)
-                # ... but highlighted products are the only ones in two categories
-                if any(x in NewProduct.name for x in product_highlights):
-                    categorized_products['!'].append(NewProduct)
-            n += 1
-
-            #name = name.replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
-            #price = price.replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
-            #discount = discount.replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
-            #discount_valid = discount_valid.replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
-            #base_price = base_price.replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
-            category = category.replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
-            #currency = currency.replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
-            #description = description.replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
-
-            self.attrs[ATTR_DISCOUNTS] = categorized_products
-            self.attrs[ATTR_ATTRIBUTION] = f"last updated {datetime.now()} \n{ATTRIBUTION}"
-            self._state = offers_valid_date
-            self._available = True
-
+    
     async def async_update(self):
 
         try:
@@ -194,7 +132,55 @@ class ReweSensor(Entity):
             # Craft query and load JSON stuff.
             try:
                 with async_timeout.timeout(30):
-                    response = self.async_wait_session(hass)
+                    data = await hass.async_add_executor_job(
+                        fetch_rewe_discounts, hass, self
+                    )
+
+                    # Reformat categories for easier access. ! are highlighted products, and ? are uncategorized ones.
+                    # Order of definition here determines printing order later on.
+                    categories = data['categories']
+                    categories_id_mapping = {'!': 'Vorgemerkte Produkte'}
+                    categorized_products = {'!': []}
+                    for n in range(0, len(categories)):
+                        if 'PAYBACK' in categories[n]['title']:  # ignore payback offers
+                            continue
+                        categories[n]['title'] = categories[n]['title'].replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
+                        categories_id_mapping.update({n: categories[n]['title']})
+                        categorized_products.update({n: []})
+                    categories_id_mapping.update({'?': 'Unbekannte Kategorie'})
+                    categorized_products.update({'?': []})
+
+                    # Get maximum valid date of offers
+                    offers_valid_date = time.strftime('%Y-%m-%d', time.localtime(data['untilDate'] / 1000))
+
+                    # Stores product data in a dict with categories as keys for a sorted printing experience.
+                    # Sometimes the data from Rewe is mixed/missing, so that's why we need all those try/excepts.
+                    discounts = []
+                    n = 0
+                    for category in data['categories']:
+                        if 'PAYBACK' in category['title']:  # ignore payback offers
+                            n += 1
+                            continue
+                        for item in category['offers']:
+                            #_LOGGER.debug(f"Processing: '{item}")
+                            item['title'] = item['title'].replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
+                            #item['subtitle'] = item['subtitle'].replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
+                            #item['priceData']['price'] = item['priceData']['price'].replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
+                            discounts.append(
+                                {
+                                    ATTR_DISCOUNT_TITLE: item['title'],
+                                    #ATTR_DISCOUNT_PRICE: item['priceData']['price'],
+                                    ATTR_DISCOUNT_PRICE: item['priceData'],
+                                    #ATTR_BASE_PRICE: item['subtitle']
+                                    ATTR_PICTURE: item['images'],
+                                }
+                            )
+                        n += 1
+
+                        self.attrs[ATTR_DISCOUNTS] = discounts
+                        self.attrs[ATTR_ATTRIBUTION] = f"last updated {datetime.now()} \n{ATTRIBUTION}"
+                        self._state = offers_valid_date
+                        self._available = True
             except:
                 self._available = False
                 _LOGGER.exception(f"Cannot retrieve discounts for: {self.market_id} - Maybe a typo or the server rejected the request.")
@@ -203,3 +189,10 @@ class ReweSensor(Entity):
             self._available = False
             _LOGGER.exception(f"Cannot retrieve data for: '{self.market_id}'")
 
+def fetch_rewe_discounts(hass, self):
+    market_id = self.market_id
+    url = 'https://mobile-api.rewe.de/api/v3/all-offers?marketCode=' + market_id
+    data = self._session.get(url).json()
+    _LOGGER.debug(f"Fetching URL: '{url}'")
+    #_LOGGER.debug(f"Getting Discounts: '{data}")
+    return data
