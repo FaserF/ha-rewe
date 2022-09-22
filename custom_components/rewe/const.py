@@ -10,4 +10,3 @@ ATTR_VALID_DATE = "valid_until"
 ATTR_CATEGORY = "category"
 
 CONF_MARKET_ID = "REWE Market ID"
-CONF_SCAN_INTERVAL = "Scan interval in minutes"

@@ -7,7 +7,7 @@ Gets discounts and highlights from the [rewe.de API](https://shop.rewe.de/mc/api
 
 
 
-This integration provides the following informations until now:
+This integration provides the following informations with a refresh interval of 24 hours until now:
 
 
 Sensors:
@@ -58,7 +58,6 @@ Go to Configuration -> Integrations and click on "add integration". Then search 
 
 ### Configuration Variables
 - **market_id**: Enter your rewe market id
-- **update interval**: Custom refresh time interval in minutes (doesnt work until now!!!)
 
 ### Automations in HA
 A full automation example for HA would be:

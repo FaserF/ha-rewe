@@ -11,7 +11,7 @@ from homeassistant.helpers.update_coordinator import (
     UpdateFailed,
 )
 
-from .const import DOMAIN,CONF_SCAN_INTERVAL
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 SCAN_INTERVAL = timedelta(days=1)
@@ -49,7 +49,6 @@ async def async_setup_entry(
         _LOGGER,
         name=f"{entry.title} Rewe state",
         update_method=async_update_data,
-        update_interval=timedelta(seconds=config[CONF_SCAN_INTERVAL]),
     )
 
     return True

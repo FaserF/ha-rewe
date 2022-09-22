@@ -6,8 +6,7 @@
         "description": "Get your REWE market id from https://www.rewe.de/",
         "title": "Rewe",
         "data": {
-          "market_id": "Rewe Market ID",
-          "scan_interval": "Scan Interval"
+          "market_id": "Rewe Market ID"
         }
       }
     },

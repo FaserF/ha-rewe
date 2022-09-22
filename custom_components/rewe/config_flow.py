@@ -10,7 +10,6 @@ import homeassistant.helpers.config_validation as cv
 
 from .const import (  # pylint: disable=unused-import
     CONF_MARKET_ID,
-    CONF_SCAN_INTERVAL
 )
 DOMAIN = "rewe"
 
@@ -39,7 +38,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         data_schema = vol.Schema(
             {
                 vol.Required(CONF_MARKET_ID, default="123456"): str,
-                vol.Required(CONF_SCAN_INTERVAL, default=180): cv.positive_int,
             },
         )
 
