@@ -34,6 +34,7 @@ from .const import (
     ATTR_BASE_PRICE,
     ATTR_PICTURE,
     ATTR_VALID_DATE,
+    ATTR_CATEGORY,
 
     DOMAIN,
 )
@@ -103,7 +104,7 @@ class ReweSensor(Entity):
     @property
     def unit_of_measurement(self):
         """Return unit of measurement."""
-        return "date"
+        return "items"
 
     @property
     def session(self):
@@ -159,7 +160,7 @@ class ReweSensor(Entity):
                     discounts = []
                     n = 0
                     for category in data['categories']:
-                        _LOGGER.debug(f"Processing category: '{category}")
+                        _LOGGER.debug(f"Processing category: '{category['title']}")
                         if 'PAYBACK' in category['title']:  # ignore payback offers
                             n += 1
                             continue
@@ -175,6 +176,7 @@ class ReweSensor(Entity):
                                     ATTR_DISCOUNT_PRICE: item['priceData'],
                                     #ATTR_BASE_PRICE: item['subtitle']
                                     ATTR_PICTURE: item['images'],
+                                    ATTR_CATEGORY: category['title']
                                 }
                             )
                         n += 1
