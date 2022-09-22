@@ -33,6 +33,7 @@ from .const import (
     ATTR_DISCOUNT_PRICE,
     ATTR_BASE_PRICE,
     ATTR_PICTURE,
+    ATTR_VALID_DATE,
 
     DOMAIN,
 )
@@ -158,11 +159,12 @@ class ReweSensor(Entity):
                     discounts = []
                     n = 0
                     for category in data['categories']:
+                        _LOGGER.debug(f"Processing category: '{category}")
                         if 'PAYBACK' in category['title']:  # ignore payback offers
                             n += 1
                             continue
                         for item in category['offers']:
-                            #_LOGGER.debug(f"Processing: '{item}")
+                            #_LOGGER.debug(f"Processing item: '{item}")
                             item['title'] = item['title'].replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
                             #item['subtitle'] = item['subtitle'].replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
                             #item['priceData']['price'] = item['priceData']['price'].replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
@@ -177,10 +179,14 @@ class ReweSensor(Entity):
                             )
                         n += 1
 
-                        self.attrs[ATTR_DISCOUNTS] = discounts
-                        self.attrs[ATTR_ATTRIBUTION] = f"last updated {datetime.now()} \n{ATTRIBUTION}"
-                        self._state = offers_valid_date
-                        self._available = True
+                    # Get the amount of offers
+                    discounts_count = len(discounts)
+
+                    self.attrs[ATTR_VALID_DATE] = offers_valid_date
+                    self.attrs[ATTR_DISCOUNTS] = discounts
+                    self.attrs[ATTR_ATTRIBUTION] = f"last updated {datetime.now()} \n{ATTRIBUTION}"
+                    self._state = discounts_count
+                    self._available = True
             except:
                 self._available = False
                 _LOGGER.exception(f"Cannot retrieve discounts for: {self.market_id} - Maybe a typo or the server rejected the request.")

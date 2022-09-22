@@ -60,6 +60,23 @@ Go to Configuration -> Integrations and click on "add integration". Then search 
 - **market_id**: Enter your rewe market id
 - **update interval**: Custom refresh time interval in minutes (doesnt work until now!!!)
 
+### Automations in HA
+A full automation example for HA would be:
+
+```yaml
+message: >
+    Neues Angebot im Rewe Prospekt für
+    {%- set product_list_loop =  state_attr('sensor.rewe_123456', 'discounts') -%}
+    {%- for product in product_list_loop -%}
+    {% if 'Spezi' in product.product or 'Hell' in product.product or 'Käse' in product.product %}
+
+    - {{product.product }}
+    Preis: {{product.price.price }} €
+    Bild: {{ product.picture_link }}
+    {%- endif -%}
+    {%- endfor -%}
+```
+
 ## Bug reporting
 Open an issue over at [github issues](https://github.com/FaserF/ha-rewe/issues). Please prefer sending over a log with debugging enabled.
 
