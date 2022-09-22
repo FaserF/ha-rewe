@@ -14,7 +14,7 @@ from homeassistant.helpers.update_coordinator import (
 from .const import DOMAIN,CONF_SCAN_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
-
+SCAN_INTERVAL = timedelta(days=1)
 
 async def async_setup_entry(
     hass: core.HomeAssistant, entry: config_entries.ConfigEntry

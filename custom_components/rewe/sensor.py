@@ -40,6 +40,7 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+SCAN_INTERVAL = timedelta(days=1)
 
 async def async_setup_entry(
     hass: HomeAssistantType, entry: ConfigType, async_add_entities
@@ -64,7 +65,6 @@ class ReweSensor(Entity):
     def __init__(self, config, hass: HomeAssistantType):
         super().__init__()
 
-        self.update_interval=timedelta(minutes=config[CONF_SCAN_INTERVAL]),
         self.market_id = config[CONF_MARKET_ID]
         self.hass = hass
         self.attrs: Dict[str, Any] = {CONF_MARKET_ID: self.market_id}
