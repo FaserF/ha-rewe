@@ -27,7 +27,6 @@ import voluptuous as vol
 from .const import (
     ATTRIBUTION,
     CONF_MARKET_ID,
-    CONF_SCAN_INTERVAL,
     ATTR_DISCOUNTS,
     ATTR_DISCOUNT_TITLE,
     ATTR_DISCOUNT_PRICE,
