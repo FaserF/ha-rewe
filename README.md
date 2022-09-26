@@ -12,11 +12,12 @@ This integration provides the following informations with a refresh interval of 
 
 Sensors:
 
-- sensor.marketid: Valid until Discount Date
+- sensor.marketid: Amount of currently valid offers
 
 Sensor Attributes:
 
 - market_id: Your rewe market id
+- valid until: Valid until Discount Date
 - discounts: Discounts currently valid
     - attribute product name
     - attribuite discount price
