@@ -37,13 +37,14 @@ Then install the "rewe discounts" integration.
 If you use this method, your component will always update to the latest version.
 
 ### 2. Manual
-Place a copy of:
 
-[`__init__.py`](custom_components/rewe) at `<config>/custom_components/`
+- Download the latest zip release from [here](https://github.com/FaserF/ha-rewe/releases/latest)
+- Extract the zip file
+- Copy the folder "rewe" from within custom_components with all of its components to `<config>/custom_components/`
 
 where `<config>` is your Home Assistant configuration directory.
 
->__NOTE__: Do not download the file by using the link above directly. Rather, click on it, then on the page that comes up use the `Raw` button.
+>__NOTE__: Do not download the file by using the link above directly, the status in the "master" branch can be in development and therefore is maybe not working.
 
 ## Configuration
 
