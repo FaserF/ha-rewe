@@ -37,7 +37,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         data_schema = vol.Schema(
             {
-                vol.Required(CONF_MARKET_ID, default="123456"): str,
+                vol.Required(CONF_MARKET_ID): str,
             },
         )
 
@@ -73,7 +73,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         """Handle options flow."""
         conf = self.config_entry
         if conf.source == config_entries.SOURCE_IMPORT:
-            return self.async_show_form(step_id="init", data_schema=None)
+            return self.async_show_form(step_id="user", data_schema=None)
         errors = {}
         if user_input is not None:
             validate_options(user_input, errors)
@@ -87,5 +87,5 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             options_schema[key] = value
 
         return self.async_show_form(
-            step_id="init", data_schema=vol.Schema(options_schema), errors=errors
+            step_id="user", data_schema=vol.Schema(options_schema), errors=errors
         )

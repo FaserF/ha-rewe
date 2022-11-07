@@ -1,4 +1,4 @@
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
+[![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
 # Rewe.de Homeassistant Discounts Sensor
 Gets discounts and highlights from the [rewe.de API](https://shop.rewe.de/mc/api/markets-stationary).
 
@@ -26,13 +26,9 @@ Sensor Attributes:
 ## Installation
 ### 1. Using HACS (recommended way)
 
-Open your HACS Settings and add
+This integration is a official HACS Integration.
 
-https://github.com/faserf/ha-rewe
-
-as custom repository URL.
-
-Then install the "rewe discounts" integration.
+Open HACS then install the "Rewe" integration.
 
 If you use this method, your component will always update to the latest version.
 
