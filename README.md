@@ -63,13 +63,13 @@ A full automation example for HA would be:
 ```yaml
 message: >
     Neues Angebot im Rewe Prospekt für
-    {%- set product_list_loop =  state_attr('sensor.rewe_123456', 'discounts') -%}
+    {%- set product_list_loop =  state_attr('sensor.rewe_440421', 'discounts') -%}
     {%- for product in product_list_loop -%}
-    {% if 'Spezi' in product.product or 'Hell' in product.product or 'Käse' in product.product %}
+    {% if 'Spezi' in product.product or 'Käse' in product.product or 'Nutella' in product.product %}
 
-    - {{product.product }}
-    Preis: {{product.price.price }} €
-    Bild: {{ product.picture_link }}
+    {{product.price.price }} € - {{product.product }}
+
+    {{ product.picture_link[0] }}
     {%- endif -%}
     {%- endfor -%}
 ```
