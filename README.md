@@ -70,7 +70,7 @@ Provided by [KrizzeOne](https://github.com/FaserF/ha-rewe/issues/2#issuecomment-
 
 {%- for product in product_list_loop -%} {% if 'Süßes & Salziges' in product.category and product.product != '' %}
 | <img src="{{product.picture_link[0] }}" width="50" height="50"/> | {{product.product }} 
-| ![badge](https://badgen.net/badge/{{ product.price.price }}€/{{ product.price.regularPrice }}/red)  
+| ![badge](https://badgen.net/badge/{{ product.price.price | urlencode }}€/{{ product.price.regularPrice | urlencode }}{%- if 'Statt' in product.price.regularPrice -%}€{%- endif -%}/red)  
 |  {%- endif -%} 
 {%- endfor -%}
 ```
