@@ -1,0 +1,47 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base"
+  ],
+  "regexManagers": [
+    {
+      "fileMatch": [
+        "/manifest.json$"
+      ],
+      "matchStrings": [
+        "cloudscraper==?(?<currentValue>.+?)[\"']?\\s+"
+      ],
+      "datasourceTemplate": "pypi",
+      "depNameTemplate": "cloudscraper"
+    }
+  ],
+  "packageRules": [
+    {
+      "matchManagers": [
+        "pip_requirements"
+      ],
+      "addLabels": [
+        "python"
+      ]
+    },
+    {
+      "matchManagers": [
+        "pip_requirements"
+      ],
+      "matchDepTypes": [
+        "dev"
+      ],
+      "rangeStrategy": "pin"
+    },
+    {
+      "matchManagers": [
+        "pip_requirements"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "automerge": true
+    }
+  ]
+}
