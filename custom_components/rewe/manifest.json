@@ -5,12 +5,12 @@
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/faserf/ha-rewe#readme",
+  "domain": "rewe",
   "issue_tracker": "https://github.com/faserf/ha-rewe/issues",
+  "iot_class": "cloud_polling",
+  "name": "Rewe Discounts",
   "requirements": [
     "cloudscraper==1.2.71"
   ],
-  "domain": "rewe",
-  "name": "Rewe Discounts",
-  "version": "2023.03.0",
-  "iot_class": "cloud_polling"
+  "version": "2023.03.0"
 }
