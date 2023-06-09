@@ -4,6 +4,7 @@ import logging
 import re
 import json
 from typing import Any, Callable, Dict, Optional
+from requests import JSONDecodeError, ConnectionError, ConnectTimeout
 
 import async_timeout
 import sys
@@ -113,7 +114,7 @@ class ReweSensor(Entity):
     def extra_state_attributes(self):
         """Return extra attributes."""
         return self.attrs
-    
+
     async def async_update(self):
 
         try:
@@ -191,6 +192,7 @@ class ReweSensor(Entity):
             except:
                 self._available = False
                 _LOGGER.exception(f"Cannot retrieve discounts for: {self.market_id} - Maybe a typo or the server rejected the request.")
+                _LOGGER.exception('{}'.format(url, data['error']))
 
         except:
             self._available = False
