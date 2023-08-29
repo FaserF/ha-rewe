@@ -50,8 +50,6 @@ async def async_setup_entry(
     _LOGGER.debug("Sensor async_setup_entry")
     if entry.options:
         config.update(entry.options)
-    sensors = ReweSensor(config, hass)
-    async_add_entities(sensors, update_before_add=True)
     async_add_entities(
         [
             ReweSensor(config, hass)
