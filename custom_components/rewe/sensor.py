@@ -70,7 +70,7 @@ class ReweSensor(Entity):
         self._name = f"Rewe {self.market_id}"
         self._state = None
         self._available = True
-        self._session = cloudscraper.create_scraper()
+        self._session = cloudscraper.create_scraper(ecdhCurve="secp384r1")
 
     @property
     def name(self) -> str:
