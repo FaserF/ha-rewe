@@ -12,5 +12,5 @@
   "requirements": [
     "cloudscraper==1.2.71"
   ],
-  "version": "2024.01.0"
+  "version": "2024.03.0"
 }

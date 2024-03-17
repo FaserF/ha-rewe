@@ -138,20 +138,26 @@ class ReweSensor(Entity):
 
                     # Reformat categories for easier access. ! are highlighted products, and ? are uncategorized ones.
                     # Order of definition here determines printing order later on.
-                    categories = data['categories']
-                    categories_id_mapping = {'!': 'Vorgemerkte Produkte'}
-                    categorized_products = {'!': []}
-                    for n in range(0, len(categories)):
-                        if 'PAYBACK' in categories[n]['title']:  # ignore payback offers
-                            continue
-                        categories[n]['title'] = categories[n]['title'].replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
-                        categories_id_mapping.update({n: categories[n]['title']})
-                        categorized_products.update({n: []})
-                    categories_id_mapping.update({'?': 'Unbekannte Kategorie'})
-                    categorized_products.update({'?': []})
+                    #categories = data['categories']
+                    #categories_id_mapping = {'!': 'Vorgemerkte Produkte'}
+                    #categorized_products = {'!': []}
+                    #for n in range(0, len(categories)):
+                    #    if 'PAYBACK' in categories[n]['title']:  # ignore payback offers
+                    #        continue
+                    #    categories[n]['title'] = categories[n]['title'].replace('\n', ' ').replace('\u2028', ' ').replace('\u000A', ' ').rstrip().lstrip()
+                    #    categories_id_mapping.update({n: categories[n]['title']})
+                    #    categorized_products.update({n: []})
+                    #categories_id_mapping.update({'?': 'Unbekannte Kategorie'})
+                    #categorized_products.update({'?': []})
 
                     # Get maximum valid date of offers
-                    offers_valid_date = time.strftime('%Y-%m-%d', time.localtime(data['untilDate'] / 1000))
+                    try:
+                        if data['untilDate']:
+                            offers_valid_date = time.strftime('%Y-%m-%d', time.localtime(data['untilDate'] / 1000))
+                        else:
+                            offers_valid_date = None
+                    except:
+                        offers_valid_date = None
 
                     # Stores product data in a dict with categories as keys for a sorted printing experience.
                     # Sometimes the data from Rewe is mixed/missing, so that's why we need all those try/excepts.
@@ -188,18 +194,127 @@ class ReweSensor(Entity):
                     self._state = discounts_count
                     self._available = True
             except:
-                self._available = False
-                _LOGGER.exception(f"Cannot retrieve discounts for: {self.market_id} - Maybe a typo or the server rejected the request.")
-                _LOGGER.exception('{}'.format(url, data['error']))
+                try:
+                    with async_timeout.timeout(30):
+                        data = await hass.async_add_executor_job(
+                            less_elegant_query, hass, self
+                        )
+
+                        try:
+                            for filter in data['filters']:
+                                if filter['id'] == 'no-price-filter':
+                                    data_filtered = filter['categories']
+                        except:
+                            _LOGGER.exception(f"FAIL: In the returned query, no data was found. The API output seems to have changed and the code needs to be adjusted. Please report it to https://github.com/foo-git/rewe-discounts and not the HA integration developer!")
+
+                        # Stores product data in a dict with categories as keys for a sorted printing experience.
+                        # Sometimes the data from Rewe is mixed/missing, so that's why we need all those try/excepts.
+                        discounts = []
+                        for category in data_filtered:
+                            _LOGGER.debug(f"Processing category: '{category}")
+                            if 'payback' in category['id']:  # ignore payback offers
+                                continue
+                            for item in category['offers']:
+                                _LOGGER.debug(f"Processing item: '{item}")
+                                try:
+                                    with async_timeout.timeout(30):
+                                        product_result = await hass.async_add_executor_job(
+                                            get_product_details, item['id'], self
+                                        )
+                                        _LOGGER.debug(f"Got item details '{product_result}")
+                                        price_in_euro = product_result['pricing']['priceInCent'] / 100
+
+                                        discounts.append(
+                                            {
+                                                ATTR_DISCOUNT_TITLE: product_result['product']['description'],
+                                                ATTR_DISCOUNT_PRICE: price_in_euro,
+                                                ATTR_PICTURE: product_result['pictures']['productImages'],
+                                                ATTR_CATEGORY: category['id']
+                                            }
+                                        )
+                                        try:
+                                            if product_result['validUntil']:
+                                                offers_valid_date = time.strftime('%Y-%m-%d', time.localtime(product_result['validUntil'] / 1000))
+                                            else:
+                                                offers_valid_date = None
+                                        except:
+                                            offers_valid_date = None
+                                except:
+                                    _LOGGER.debug(f"Cannot retrieve product details for: {item}.")
+                                    offers_valid_date = None
+                                    #_LOGGER.exception('{}'.format(url, data['error']))
+
+                        # Get the amount of offers
+                        discounts_count = len(discounts)
+
+                        self.attrs[ATTR_VALID_DATE] = offers_valid_date
+                        self.attrs[ATTR_DISCOUNTS] = discounts
+                        self.attrs[ATTR_ATTRIBUTION] = f"last updated {datetime.now()} \n{ATTRIBUTION}"
+                        self._state = discounts_count
+                        self._available = True
+                except:
+                    self._available = False
+                    _LOGGER.exception(f"Cannot retrieve discounts for: {self.market_id} - Maybe a typo or the server rejected the request.")
+                    #_LOGGER.exception('{}'.format(url, data['error']))
 
         except:
             self._available = False
             _LOGGER.exception(f"Cannot retrieve data for: '{self.market_id}'")
 
+
 def fetch_rewe_discounts(hass, self):
     market_id = self.market_id
     url = 'https://mobile-api.rewe.de/api/v3/all-offers?marketCode=' + market_id
-    data = self._session.get(url).json()
-    _LOGGER.debug(f"Fetching URL: '{url}'")
+    _LOGGER.debug(f"Fetching api URL: '{url}'")
+    try:
+        data = self._session.get(url).json()
+    except (JSONDecodeError, ConnectionError, ConnectTimeout):
+        _LOGGER.debug(f'FAIL: Unknown error while fetching discounts from {url}, maybe a typo or the server rejected the request.')
+
     #_LOGGER.debug(f"Getting Discounts: '{data}")
-    return data
+    try:
+        if data:
+            return data
+        else:
+            return None
+    except:
+        return None
+
+def less_elegant_query(hass, self):
+    market_id = self.market_id
+    # When the single query approach fails...
+    url = 'https://www.rewe.de/api/all-stationary-offers/' + market_id
+    _LOGGER.debug(f"Fetching with first api URL failed, trying instead now '{url}'")
+    try:
+        data = self._session.get(url).json()
+    except (JSONDecodeError, ConnectionError, ConnectTimeout):
+        _LOGGER.debug(f'FAIL: Unknown error while fetching discounts from {url}, maybe a typo or the server rejected the request.')
+
+    #_LOGGER.debug(f"Getting Discounts: '{data}")
+    try:
+        if data:
+            return data
+        else:
+            return None
+    except:
+        return None
+
+# If the less elegant approach is used, we get different API output and need to process each product individually
+def get_product_details(product_id, self):
+    market_id = self.market_id
+    url = 'https://www.rewe.de/api/offer-details/{}?wwIdent={}'.format(product_id, market_id)
+    try:
+        product_result = self._session.get(url).json()
+        time.sleep(0.02)  # without any sleep, we run into 429 errors, 0.02 s works for now
+    except JSONDecodeError:  # Maye a timeout/load issue, retrying silently
+        _LOGGER.debug('INFO: Error while retrieving, possible timeout issue, continuing in 60 seconds...')
+        time.sleep(60)
+        product_result = self._session.get(url).json()
+
+    try:
+        if product_result:
+            return product_result
+        else:
+            return None
+    except:
+        return None
