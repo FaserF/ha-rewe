@@ -57,7 +57,8 @@ Go to Configuration -> Integrations and click on "add integration". Then search 
 ### Configuration Variables
 - **market_id**: Enter your rewe market id
 
-### Sample Lovelace card
+### Lovelace cards
+## Sample Lovelace card from KrizzeOne
 Provided by [KrizzeOne](https://github.com/FaserF/ha-rewe/issues/2#issuecomment-1360129338):
 
 <img src="https://user-images.githubusercontent.com/65257000/208757904-665cd0eb-4dd9-4d03-b40a-6cf027d38c86.png" width="400px">
@@ -69,9 +70,9 @@ Provided by [KrizzeOne](https://github.com/FaserF/ha-rewe/issues/2#issuecomment-
  {%- set product_list_loop =  state_attr('sensor.rewe_440421', 'discounts') -%}
 
 {%- for product in product_list_loop -%} {% if 'Süßes & Salziges' in product.category and product.product != '' %}
-| <img src="{{product.picture_link[0] }}" width="50" height="50"/> | {{product.product }} 
-| ![badge](https://badgen.net/badge/{{ product.price.price | urlencode }}€/{{ product.price.regularPrice | urlencode }}{%- if 'Statt' in product.price.regularPrice -%}€{%- endif -%}/red)  
-|  {%- endif -%} 
+| <img src="{{product.picture_link[0] }}" width="50" height="50"/> | {{product.product }}
+| ![badge](https://badgen.net/badge/{{ product.price.price | urlencode }}€/{{ product.price.regularPrice | urlencode }}{%- if 'Statt' in product.price.regularPrice -%}€{%- endif -%}/red)
+|  {%- endif -%}
 {%- endfor -%}
 ```
 _Downsides / Considerations:_
@@ -80,6 +81,11 @@ _Downsides / Considerations:_
 - Price tags are build via https://badgen.net and most of the time you have to reload your lovelace page to get all badges
 - Product images aren't square all the time. Sometimes they look a bit distorted
 - By using table layout as I do, Lovelace cards looks different if you have short/long product names. This drives me crazy and I hope I will have a more robust solution in the future.
+
+## Sample Lovelace card from schblondie
+Provided by [schblondie](https://github.com/schblondie/ha-rewe-discounts-card):
+
+<img src="https://private-user-images.githubusercontent.com/80481720/314297813-5c9525a0-74b0-4e38-96e7-264ba4d619d0.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTA5NDIxNTEsIm5iZiI6MTcxMDk0MTg1MSwicGF0aCI6Ii84MDQ4MTcyMC8zMTQyOTc4MTMtNWM5NTI1YTAtNzRiMC00ZTM4LTk2ZTctMjY0YmE0ZDYxOWQwLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDAzMjAlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwMzIwVDEzMzczMVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTY1Mzg4NDY1NGI0Mjk4YjZjYzFjYzVhMmE0YTc3MGQxZDA0N2I3YjllMjExMWRjNDcyNGU0NTc4MjMwZjM5MGUmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0._FRrnQLcAtACnmZWvcxMXjXmDsf3gavJSO4IbZe5LyY" width="400px">
 
 ### Automations in HA
 A full automation example for HA would be:
