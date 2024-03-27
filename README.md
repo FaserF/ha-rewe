@@ -71,7 +71,7 @@ Provided by [KrizzeOne](https://github.com/FaserF/ha-rewe/issues/2#issuecomment-
 
 {%- for product in product_list_loop -%} {% if 'Süßes & Salziges' in product.category and product.product != '' %}
 | <img src="{{product.picture_link[0] }}" width="50" height="50"/> | {{product.product }}
-| ![badge](https://badgen.net/badge/{{ product.price.price | urlencode }}€/{{ product.price.regularPrice | urlencode }}{%- if 'Statt' in product.price.regularPrice -%}€{%- endif -%}/red)
+| ![badge](https://badgen.net/badge/{{ product.price | urlencode }}/€)
 |  {%- endif -%}
 {%- endfor -%}
 ```
@@ -85,7 +85,7 @@ _Downsides / Considerations:_
 ## Sample Lovelace card from schblondie
 Provided by [schblondie](https://github.com/schblondie/ha-rewe-discounts-card):
 
-<img src="https://private-user-images.githubusercontent.com/80481720/314297813-5c9525a0-74b0-4e38-96e7-264ba4d619d0.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTA5NDIxNTEsIm5iZiI6MTcxMDk0MTg1MSwicGF0aCI6Ii84MDQ4MTcyMC8zMTQyOTc4MTMtNWM5NTI1YTAtNzRiMC00ZTM4LTk2ZTctMjY0YmE0ZDYxOWQwLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDAzMjAlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwMzIwVDEzMzczMVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTY1Mzg4NDY1NGI0Mjk4YjZjYzFjYzVhMmE0YTc3MGQxZDA0N2I3YjllMjExMWRjNDcyNGU0NTc4MjMwZjM5MGUmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0._FRrnQLcAtACnmZWvcxMXjXmDsf3gavJSO4IbZe5LyY" width="400px">
+<img src="https://private-user-images.githubusercontent.com/80481720/314297813-5c9525a0-74b0-4e38-96e7-264ba4d619d0.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTE1MzIxOTgsIm5iZiI6MTcxMTUzMTg5OCwicGF0aCI6Ii84MDQ4MTcyMC8zMTQyOTc4MTMtNWM5NTI1YTAtNzRiMC00ZTM4LTk2ZTctMjY0YmE0ZDYxOWQwLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDAzMjclMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwMzI3VDA5MzEzOFomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTJmOWY3MzkwYzA5NWVmYzUyODBjNzllM2IzOGIxMTM4Mzk4NzJjMDM4ZDgxNWUyZTFhMzNjNDJiMjExZTA2Y2UmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.uJvAQ7_wGWO1Jri6N2Mt4XJaVn5ZQhJsWqQJVkINIkk" width="400px">
 
 ### Automations in HA
 A full automation example for HA would be:
