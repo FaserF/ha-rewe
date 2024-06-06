@@ -1,4 +1,7 @@
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
+
+# CURRENTLY NOT WORKING ANYMORE, SINCE API HAS BEEN TAKEN DOWN! SEE https://github.com/FaserF/ha-rewe/issues/22
+
 # Rewe.de Homeassistant Discounts Sensor
 Gets discounts and highlights from the [rewe.de API](https://shop.rewe.de/mc/api/markets-stationary).
 
