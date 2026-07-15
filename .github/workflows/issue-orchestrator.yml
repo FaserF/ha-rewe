@@ -1,0 +1,83 @@
+name: Issue Orchestrator
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  auto-label:
+    name: Label Issue
+    runs-on: ubuntu-latest
+    steps:
+      - name: Label Issues
+        uses: actions/github-script@v9.0.0
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const title = issue.title.toLowerCase();
+            const body = (issue.body || "").toLowerCase();
+            const labels = [];
+            
+            if (title.includes("bug") || body.includes("bug") || body.includes("fehler")) {
+              labels.push("bug");
+            }
+            if (title.includes("feature") || title.includes("request") || body.includes("wunsch")) {
+              labels.push("enhancement");
+            }
+            if (title.includes("documentation") || title.includes("docs") || body.includes("doku")) {
+              labels.push("documentation");
+            }
+            if (title.includes("cert") || body.includes("cert") || body.includes("zertifikat") || body.includes("mtls")) {
+              labels.push("certificates");
+            }
+            
+            if (labels.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: labels
+              });
+            }
+
+  auto-comment:
+    name: Comment & Close
+    runs-on: ubuntu-latest
+    needs: auto-label
+    steps:
+      - name: Comment on new issue
+        uses: actions/github-script@v9.0.0
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const labels = issue.labels.map(l => l.name);
+
+            let body = "Hi @" + issue.user.login + ", thanks for opening this issue! 👋\n\n";
+            const maintainerNote = "\n\n---\n*Please note: I maintain this integration in my free time as a hobby project. I'll do my best to look into this soon, but feedback speed may vary depending on my availability.*";
+
+            if (labels.includes('bug')) {
+              body += "⚠️ **Bug Report Received**\n\n";
+              body += "To help solve this faster, please check the following:\n";
+              body += "- [ ] Is your Home Assistant version up to date?\n";
+              body += "- [ ] Are you using the latest version of this integration?\n";
+              body += "- [ ] Have you checked the [README](https://github.com/FaserF/ha-rewe) and other open issues for similar issues or configuration tips?\n";
+              body += "- [ ] If applicable: Did you provide a **Diagnostic Download** or relevant debug logs?\n\n";
+              body += "I will investigate this as soon as possible!";
+            } else if (labels.includes('enhancement')) {
+              body += "🚀 **Feature Request**\n\n";
+              body += "Thanks for the idea! Feature requests help shape the future of this integration. I'll review it and see how it fits into the roadmap.\n";
+            } else {
+              body += "I've received your issue and will look into it as soon as I can.";
+            }
+
+            body += maintainerNote;
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });

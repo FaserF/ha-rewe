@@ -1,39 +1,29 @@
-name: Feature request
-description: Suggest an idea for this project for the unoficial Rewe integration
-title: "[Feature Request]: "
-labels: ["enhancement"]
+name: Feature Request
+description: Suggest an idea or enhancement for the REWE Discounts Home Assistant integration
+title: '[Feature]: '
+labels: ['enhancement', 'triage']
 assignees:
   - FaserF
 body:
   - type: markdown
     attributes:
       value: |
-        This feature request request form is for feature requests only!
+        ## Before submitting
+        - 🔍 Search [existing feature requests](https://github.com/FaserF/ha-rewe/issues?q=label%3Aenhancement) to avoid duplicates
 
-        If you have a bug or issue request, please use the bug report template!
   - type: textarea
+    id: problem
+    attributes:
+      label: Problem Description
+      description: Is your feature request related to a problem? Describe it clearly.
+      placeholder: "I'm always frustrated when..."
     validations:
       required: true
-    attributes:
-      label: The request
-      description: >-
-        A clear and concise description of what you want to happen.
-  - type: markdown
-    attributes:
-      value: |
-        ## Environment
-  - type: markdown
-    attributes:
-      value: |
-        # Details
+
   - type: textarea
+    id: solution
     attributes:
-      label: Is your feature request related to a problem?
-      render: txt
-      description: >-
-        A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
-  - type: textarea
-    attributes:
-      label: Additional information
-      description: >
-        If you have any additional information for us, use the field below.
+      label: Proposed Solution
+      description: A clear and concise description of what you want to happen.
+    validations:
+      required: true

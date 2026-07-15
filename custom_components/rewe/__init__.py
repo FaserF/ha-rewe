@@ -1,83 +1,61 @@
-"""Rewe.de Custom Component."""
-import asyncio
+"""REWE Discounts – Home Assistant Custom Component."""
+
+from __future__ import annotations
+
 import logging
-from datetime import timedelta
 
 from homeassistant import config_entries, core
+from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers.update_coordinator import UpdateFailed
 
-from homeassistant.helpers.update_coordinator import (
-    CoordinatorEntity,
-    DataUpdateCoordinator,
-    UpdateFailed,
-)
-
-from .const import DOMAIN
+from .const import DOMAIN, PLATFORMS
+from .coordinator import ReweDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
-SCAN_INTERVAL = timedelta(days=1)
+
 
 async def async_setup_entry(
     hass: core.HomeAssistant, entry: config_entries.ConfigEntry
 ) -> bool:
-    """Set up platform from a ConfigEntry."""
+    """Set up REWE Discounts from a config entry."""
     hass.data.setdefault(DOMAIN, {})
-    hass_data = dict(entry.data)
-    # Registers update listener to update config entry when options are updated.
-    unsub_options_update_listener = entry.add_update_listener(options_update_listener)
-    # Store a reference to the unsubscribe function to cleanup if an entry is unloaded.
-    hass_data["unsub_options_update_listener"] = unsub_options_update_listener
-    hass.data[DOMAIN][entry.entry_id] = hass_data
 
-    # Forward the setup to the sensor platform.
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setup(entry, "sensor")
-    )
+    coordinator = ReweDataUpdateCoordinator(hass, entry)
+    await coordinator.async_load_cache()
 
-    config = hass.data[DOMAIN][entry.entry_id]
-    async def async_update_data():
-        """Fetch data from Foodsharing."""
-        async with async_timeout.timeout(scan_interval - 1):
-            await hass.async_add_executor_job(lambda: data.update())
+    hass.data[DOMAIN][entry.entry_id] = coordinator
 
-            if not data.state:
-                raise UpdateFailed(f"Error fetching {entry.title} Rewe state")
+    try:
+        await coordinator.async_config_entry_first_refresh()
+    except UpdateFailed as err:
+        if not coordinator.data:
+            raise ConfigEntryNotReady(
+                f"Cannot connect to REWE API for market {coordinator.market_id}: {err}"
+            ) from err
+        _LOGGER.warning(
+            "Initial REWE update failed for market %s, using cached data. Error: %s",
+            coordinator.market_id,
+            err,
+        )
 
-            return data.state
+    entry.async_on_unload(entry.add_update_listener(_async_update_options))
 
-    coordinator = DataUpdateCoordinator(
-        hass,
-        _LOGGER,
-        name=f"{entry.title} Rewe state",
-        update_method=async_update_data,
-    )
-
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
-async def options_update_listener(
-    hass: core.HomeAssistant, config_entry: config_entries.ConfigEntry
-):
-    """Handle options update."""
-    await hass.config_entries.async_reload(config_entry.entry_id)
+async def _async_update_options(
+    hass: core.HomeAssistant, entry: config_entries.ConfigEntry
+) -> None:
+    """Reload the entry when options change."""
+    await hass.config_entries.async_reload(entry.entry_id)
 
-async def async_update(self):
-    """Async wrapper for update method."""
-    return await self._hass.async_add_executor_job(self._update)
 
 async def async_unload_entry(
     hass: core.HomeAssistant, entry: config_entries.ConfigEntry
 ) -> bool:
     """Unload a config entry."""
-    unload_ok = all(
-        await asyncio.gather(
-            *[hass.config_entries.async_forward_entry_unload(entry, "sensor")]
-        )
-    )
-    # Remove options_update_listener.
-    hass.data[DOMAIN][entry.entry_id]["unsub_options_update_listener"]()
-
-    # Remove config entry from domain.
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
-
     return unload_ok

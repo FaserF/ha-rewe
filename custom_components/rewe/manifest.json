@@ -1,16 +1,10 @@
 {
   "domain": "rewe",
-  "name": "Rewe Discounts",
-  "codeowners": [
-    "@faserf"
-  ],
+  "name": "REWE Discounts",
+  "codeowners": ["@FaserF"],
   "config_flow": true,
-  "dependencies": [],
-  "documentation": "https://github.com/faserf/ha-rewe#readme",
+  "documentation": "https://github.com/FaserF/ha-rewe",
   "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/faserf/ha-rewe/issues",
-  "requirements": [
-    "cloudscraper==1.2.71"
-  ],
-  "version": "2024.03.0"
+  "requirements": ["rewerse>=1.2.0", "curl_cffi>=0.7.0"],
+  "version": "2026.07.1"
 }

@@ -1,20 +1,52 @@
 {
   "config": {
-    "flow_title": "Setup Rewe",
+    "flow_title": "Setup REWE weekly offers",
     "step": {
       "user": {
-        "description": "Get your REWE market id from https://www.rewe.de/",
+        "description": "Enter your REWE Market ID directly, or type your city / postal code to search for nearby REWE markets.",
         "data": {
-          "market_id": "Rewe Market ID"
+          "search_or_id": "REWE Market ID or Search Query"
+        }
+      },
+      "select_market": {
+        "description": "Select your REWE market from the search results below.",
+        "data": {
+          "market_id": "Select Market"
         }
       }
     },
     "abort": {
-      "already_configured": "This rewe market ID is already configured"
+      "already_configured": "This REWE market is already configured.",
+      "no_markets_found": "No REWE markets found matching your query."
     },
     "error": {
-      "invalid_station": "Invalid market ID",
-      "unknown": "Unknown Error"
+      "invalid_market_id": "Please enter a valid numeric market ID.",
+      "search_failed": "Failed to query the REWE market API. Please enter your ID manually.",
+      "search_library_failed": "The search system library is not supported on this platform. Please enter your ID manually.",
+      "missing_certificates": "mTLS certificates are missing. Please enter your ID manually.",
+      "no_markets_found": "No REWE markets found matching your query. Please try another search or enter ID manually.",
+      "missing_rewerse_library": "The required library 'rewerse' is missing.",
+      "unknown": "Unknown Error occurred."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Configure REWE weekly offers",
+        "data": {
+          "update_interval": "Update Interval (minutes, min 10)"
+        }
+      }
+    }
+  },
+  "issues": {
+    "connection_error": {
+      "title": "Error communicating with REWE API",
+      "description": "The integration is unable to fetch discounts. Please check the logs."
+    },
+    "missing_certificates": {
+      "title": "Missing REWE mTLS certificates",
+      "description": "The client certificates required to authenticate with the REWE API are missing. Please reinstall the integration from HACS."
     }
   }
 }

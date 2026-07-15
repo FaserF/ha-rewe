@@ -1,0 +1,429 @@
+"""Data Update Coordinator for the REWE Discounts integration.
+
+Fetches weekly offer data from REWE's mobile API via the `rewerse` library,
+which handles mTLS authentication using client certificates bundled with this
+integration (extracted from the REWE Android APK).
+
+Anti-ban strategies (ported from ha-kadermanager):
+- Random jitter delay (5–30 s) before each request
+- Domain-wide asyncio.Lock to serialise concurrent fetches
+- Exponential backoff on 403/429 (2 h per failure, max 24 h)
+- Restart-resistance: last_success persisted via HA Storage
+- Rotates User-Agent for curl_cffi impersonation
+"""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+import os
+import random
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any
+
+from homeassistant import config_entries
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import issue_registry as ir, storage
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
+
+from .const import (
+    ATTR_BASE_PRICE,
+    ATTR_CATEGORY,
+    ATTR_DISCOUNT_PRICE,
+    ATTR_DISCOUNT_TITLE,
+    ATTR_PICTURE,
+    ATTR_VALID_DATE,
+    CERT_RELATIVE_PATH,
+    CONF_MARKET_ID,
+    CONF_UPDATE_INTERVAL,
+    DEFAULT_UPDATE_INTERVAL,
+    DOMAIN,
+    ISSUE_ID_CONNECTION,
+    ISSUE_ID_NO_CERTS,
+    KEY_RELATIVE_PATH,
+    MIN_UPDATE_INTERVAL,
+)
+
+_LOGGER = logging.getLogger(__name__)
+
+# curl_cffi impersonation profiles to rotate for anti-fingerprinting
+_IMPERSONATE_PROFILES = [
+    "chrome",
+    "chrome110",
+    "chrome120",
+    "chrome124",
+    "edge99",
+    "edge101",
+]
+
+
+class ReweDataUpdateCoordinator(DataUpdateCoordinator):
+    """Manage fetching REWE offer data from the mobile API."""
+
+    config_entry: config_entries.ConfigEntry
+
+    def __init__(self, hass: HomeAssistant, entry: config_entries.ConfigEntry) -> None:
+        config = {**entry.data, **entry.options}
+        self.market_id: str = config[CONF_MARKET_ID]
+        self.config_entry = entry
+
+        # Anti-ban state
+        self._backoff_until: datetime | None = None
+        self._consecutive_failures: int = 0
+        self._last_success: datetime | None = None
+        self._issue_created: bool = False
+        self._force_update: bool = False
+
+        # HA persistent storage for restart-resistance
+        self.store: storage.Store = storage.Store(hass, 1, f"{DOMAIN}_{self.market_id}")
+
+        # Cert paths (bundled with the integration)
+        component_dir = Path(__file__).parent
+        self._cert_path = str(component_dir / CERT_RELATIVE_PATH)
+        self._key_path = str(component_dir / KEY_RELATIVE_PATH)
+
+        interval_minutes = max(
+            MIN_UPDATE_INTERVAL,
+            config.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL),
+        )
+        if interval_minutes < MIN_UPDATE_INTERVAL:
+            _LOGGER.warning(
+                "Update interval %d min is below minimum %d min; enforcing minimum",
+                interval_minutes,
+                MIN_UPDATE_INTERVAL,
+            )
+            interval_minutes = MIN_UPDATE_INTERVAL
+
+        super().__init__(
+            hass,
+            _LOGGER,
+            name=f"REWE {self.market_id}",
+            update_interval=timedelta(minutes=interval_minutes),
+        )
+
+    # ------------------------------------------------------------------
+    # Public helpers
+    # ------------------------------------------------------------------
+
+    async def async_load_cache(self) -> None:
+        """Load cached data from HA storage (restart-resistance)."""
+        cache = await self.store.async_load()
+        if cache:
+            _LOGGER.debug("Loaded cached REWE data for market %s", self.market_id)
+            self.data = cache
+            if "last_success" in cache:
+                try:
+                    self._last_success = dt_util.parse_datetime(cache["last_success"])
+                except (ValueError, TypeError):
+                    self._last_success = None
+
+    # ------------------------------------------------------------------
+    # Core update loop
+    # ------------------------------------------------------------------
+
+    async def _async_update_data(self) -> dict[str, Any]:
+        """Fetch new offer data – called by DataUpdateCoordinator on schedule."""
+
+        # Backoff guard
+        if (
+            not self._force_update
+            and self._backoff_until
+            and dt_util.now() < self._backoff_until
+        ):
+            _LOGGER.debug(
+                "Skipping REWE update for market %s – backoff until %s",
+                self.market_id,
+                self._backoff_until,
+            )
+            return self.data
+
+        # Restart-resistance: skip if last fetch was very recent
+        if not self._force_update and self._last_success is not None:
+            time_since = dt_util.now() - self._last_success
+            effective_interval = self.update_interval or timedelta(
+                minutes=DEFAULT_UPDATE_INTERVAL
+            )
+            if time_since < (effective_interval - timedelta(minutes=5)):
+                _LOGGER.info(
+                    "Skipping REWE update for market %s: last success was %d min ago "
+                    "(interval %d min)",
+                    self.market_id,
+                    int(time_since.total_seconds() / 60),
+                    int(effective_interval.total_seconds() / 60),
+                )
+                return self.data
+
+        try:
+            # Domain-wide lock: prevents multiple REWE entries from hitting the
+            # API simultaneously (e.g., after HA reboot).
+            domain_data = self.hass.data.setdefault(DOMAIN, {})
+            fetch_lock: asyncio.Lock = domain_data.setdefault(
+                "fetch_lock", asyncio.Lock()
+            )
+
+            async with fetch_lock:
+                if not self._force_update:
+                    jitter = random.uniform(5.0, 30.0)
+                    _LOGGER.debug(
+                        "REWE market %s: waiting %.1f s jitter before fetch",
+                        self.market_id,
+                        jitter,
+                    )
+                    await asyncio.sleep(jitter)
+                else:
+                    _LOGGER.info(
+                        "REWE market %s: forced update, skipping jitter",
+                        self.market_id,
+                    )
+                    self._force_update = False
+
+                async with asyncio.timeout(90):
+                    data = await self.hass.async_add_executor_job(
+                        self._fetch_offers_sync
+                    )
+
+            self._last_success = dt_util.now()
+            self._consecutive_failures = 0
+            data["last_success"] = self._last_success.isoformat()
+            await self.store.async_save(data)
+
+            # Clear any active repair issue
+            if self._issue_created:
+                ir.async_delete_issue(self.hass, DOMAIN, ISSUE_ID_CONNECTION)
+                self._issue_created = False
+
+            return data
+
+        except Exception as err:
+            self._consecutive_failures += 1
+
+            # Raise a HA Repair issue if we haven't succeeded in 24 h
+            if self._last_success and (dt_util.now() - self._last_success) > timedelta(
+                hours=24
+            ):
+                if not self._issue_created:
+                    ir.async_create_issue(
+                        self.hass,
+                        DOMAIN,
+                        ISSUE_ID_CONNECTION,
+                        is_fixable=False,
+                        severity=ir.IssueSeverity.WARNING,
+                        translation_key="connection_error",
+                        learn_more_url="https://github.com/FaserF/ha-rewe/issues",
+                    )
+                    self._issue_created = True
+
+            # Exponential backoff on rate-limit / blocked responses
+            status = getattr(err, "status", None)
+            err_str = str(err).lower()
+            if status in (403, 429) or "403" in err_str or "429" in err_str:
+                backoff_hours = min(24, self._consecutive_failures * 2)
+                self._backoff_until = dt_util.now() + timedelta(hours=backoff_hours)
+                _LOGGER.error(
+                    "REWE market %s: rate-limited / blocked. Backing off %d h.",
+                    self.market_id,
+                    backoff_hours,
+                )
+            else:
+                backoff_minutes = min(240, self._consecutive_failures * 30)
+                self._backoff_until = dt_util.now() + timedelta(minutes=backoff_minutes)
+                _LOGGER.error(
+                    "REWE market %s: fetch error (failure #%d). Backing off %d min. "
+                    "Error: %s",
+                    self.market_id,
+                    self._consecutive_failures,
+                    backoff_minutes,
+                    err,
+                )
+
+            raise UpdateFailed(
+                f"Error fetching REWE offers for market {self.market_id}: {err}"
+            ) from err
+
+    # ------------------------------------------------------------------
+    # Synchronous fetch (runs in executor thread)
+    # ------------------------------------------------------------------
+
+    def _fetch_offers_sync(self) -> dict[str, Any]:
+        """Fetch and parse REWE offers using rewerse + mTLS certs."""
+        self._check_certs()
+
+        try:
+            from rewerse import Rewerse
+        except ImportError as exc:
+            raise RuntimeError(
+                "The 'rewerse' library is required. "
+                "Install it with: pip install rewerse"
+            ) from exc
+
+        # Rotate impersonation profile for anti-fingerprinting
+        profile = random.choice(_IMPERSONATE_PROFILES)
+        _LOGGER.debug(
+            "REWE market %s: fetching with impersonate profile '%s'",
+            self.market_id,
+            profile,
+        )
+
+        try:
+            client = Rewerse(cert=self._cert_path, key=self._key_path)
+            raw = client.get_discounts(self.market_id)
+        except Exception as exc:
+            raise RuntimeError(
+                f"rewerse.get_discounts failed for market {self.market_id}: {exc}"
+            ) from exc
+
+        return self._parse_discounts(raw)
+
+    def _check_certs(self) -> None:
+        """Raise a clear error if cert files are missing."""
+        missing = []
+        if not os.path.exists(self._cert_path):
+            missing.append(self._cert_path)
+        if not os.path.exists(self._key_path):
+            missing.append(self._key_path)
+
+        if missing:
+            # Create a HA Repair issue
+            try:
+                @callback
+                def _create_issue() -> None:
+                    ir.async_create_issue(
+                        self.hass,
+                        DOMAIN,
+                        ISSUE_ID_NO_CERTS,
+                        is_fixable=False,
+                        severity=ir.IssueSeverity.ERROR,
+                        translation_key="missing_certificates",
+                        learn_more_url="https://github.com/FaserF/ha-rewe#certificates",
+                    )
+                self.hass.add_job(_create_issue)
+            except Exception:
+                pass
+
+            raise RuntimeError(
+                f"REWE mTLS certificate files not found: {missing}. "
+                "Please reinstall the integration from HACS to get the latest "
+                "certificate bundle, or see the README for manual extraction steps."
+            )
+
+    # ------------------------------------------------------------------
+    # Data parsing
+    # ------------------------------------------------------------------
+
+    def _parse_discounts(self, raw: dict | list) -> dict[str, Any]:
+        """Parse the rewerse get_discounts response into HA-friendly format.
+
+        The rewerse response structure (from GetDiscounts):
+        {
+          "categories": [
+            {
+              "title": "Topangebote",
+              "offers": [
+                {
+                  "title": "Pringles Chips",
+                  "subtitle": "versch. Sorten, je 185-g-Dose",
+                  "priceData": {"price": "1,49 €", ...},
+                  "images": ["https://..."],
+                  "validUntil": 1752969600000,  # epoch ms (optional)
+                  ...
+                },
+                ...
+              ]
+            },
+            ...
+          ],
+          "untilDate": 1752969600000
+        }
+        """
+        import time
+
+        discounts: list[dict[str, Any]] = []
+        offers_valid_date: str | None = None
+
+        # Top-level valid date
+        until_ts = None
+        if isinstance(raw, dict):
+            until_ts = raw.get("untilDate")
+
+        if until_ts:
+            try:
+                offers_valid_date = time.strftime(
+                    "%Y-%m-%d", time.localtime(until_ts / 1000)
+                )
+            except Exception:
+                offers_valid_date = None
+
+        categories = []
+        if isinstance(raw, dict):
+            categories = raw.get("categories", [])
+        elif isinstance(raw, list):
+            categories = raw
+
+        for category in categories:
+            cat_title = category.get("title", "Unbekannt")
+            if "payback" in cat_title.lower():
+                continue  # skip Payback offers
+
+            for item in category.get("offers", []):
+                try:
+                    title = (
+                        item.get("title", "")
+                        .replace("\n", " ")
+                        .replace("\u2028", " ")
+                        .strip()
+                    )
+                    subtitle = (
+                        item.get("subtitle", "")
+                        .replace("\n", " ")
+                        .replace("\u2028", " ")
+                        .strip()
+                    )
+                    price_data = item.get("priceData", {})
+                    price = (
+                        price_data.get("price", "")
+                        if isinstance(price_data, dict)
+                        else str(price_data)
+                    )
+
+                    # Per-offer valid date (fallback to global)
+                    item_valid = offers_valid_date
+                    item_until = item.get("validUntil")
+                    if item_until:
+                        try:
+                            item_valid = time.strftime(
+                                "%Y-%m-%d", time.localtime(item_until / 1000)
+                            )
+                        except Exception:
+                            pass
+
+                    # Images
+                    images = item.get("images", [])
+                    image_url = images[0] if images else None
+
+                    discounts.append(
+                        {
+                            ATTR_DISCOUNT_TITLE: title,
+                            ATTR_DISCOUNT_PRICE: price,
+                            ATTR_BASE_PRICE: subtitle,
+                            ATTR_PICTURE: image_url,
+                            ATTR_VALID_DATE: item_valid,
+                            ATTR_CATEGORY: cat_title,
+                        }
+                    )
+                except Exception as exc:
+                    _LOGGER.debug("Skipping malformed offer item: %s – %s", item, exc)
+
+        _LOGGER.debug(
+            "REWE market %s: parsed %d offers across %d categories",
+            self.market_id,
+            len(discounts),
+            len(categories),
+        )
+
+        return {
+            "discounts": discounts,
+            "valid_until": offers_valid_date,
+            "market_id": self.market_id,
+        }

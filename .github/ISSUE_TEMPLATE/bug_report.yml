@@ -1,76 +1,55 @@
-name: Report an issue
-description: Report an issue with the unofficial Rewe Integration
+name: Bug Report
+description: Report a bug with the REWE Discounts Home Assistant integration
+title: '[Bug]: '
+labels: ['bug', 'triage']
+assignees:
+  - FaserF
 body:
   - type: markdown
     attributes:
       value: |
-        This issue form is for reporting bugs only!
+        ## Before submitting
+        - 🔍 Search [existing issues](https://github.com/FaserF/ha-rewe/issues) to avoid duplicates
+        - 📖 Check the README.md
 
-        If you have a feature or enhancement request, please use the feature request template!
-  - type: textarea
-    validations:
-      required: true
-    attributes:
-      label: The problem
-      description: >-
-        Describe the issue you are experiencing here.
-        Provide a clear and concise description of what the problem is.
-  - type: markdown
-    attributes:
-      value: |
-        ## Environment
   - type: input
-    id: version
+    id: integration_version
+    attributes:
+      label: Integration Version
+      description: Which version of ha-rewe are you running? (HACS or integration page)
+      placeholder: e.g. v2026.07.1
     validations:
       required: true
-    attributes:
-      label: What version of Home Assistant Core has the issue?
-      placeholder: core-
-      description: >
-        Can be found in: [Settings -> About](https://my.home-assistant.io/redirect/info/).
 
-        [![Open your Home Assistant instance and show your Home Assistant version information.](https://my.home-assistant.io/badges/info.svg)](https://my.home-assistant.io/redirect/info/)
   - type: input
-    id: version_integration
+    id: ha_version
+    attributes:
+      label: Home Assistant Version
+      placeholder: e.g. 2026.7.1
     validations:
       required: true
-    attributes:
-      label: What version of Rewe Integration has the issue?
-      placeholder: 
-      description: >
-        The version from the release page you are using. Latest version can be found here: https://github.com/FaserF/ha-rewe/releases/latest
-  - type: dropdown
-    validations:
-      required: true
-    attributes:
-      label: What type of installation are you running?
-      description: >
-        Can be found in: [Settings -> About](https://my.home-assistant.io/redirect/info/).
 
-        [![Open your Home Assistant instance and show your Home Assistant version information.](https://my.home-assistant.io/badges/info.svg)](https://my.home-assistant.io/redirect/info/)
-      options:
-        - Home Assistant OS
-        - Home Assistant Container
-        - Home Assistant Supervised
-        - Home Assistant Core
-  - type: markdown
-    attributes:
-      value: |
-        # Details
   - type: textarea
+    id: description
     attributes:
-      label: Example YAML snippet
+      label: Describe the Bug
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Log Output
       description: |
-        If applicable, please provide an example piece of YAML that can help reproduce this problem.
-        This can be from an automation, script, scene or configuration.
-      render: yaml
-  - type: textarea
-    attributes:
-      label: Anything in the logs that might be useful for us?
-      description: For example, error message, or stack traces.
-      render: txt
-  - type: textarea
-    attributes:
-      label: Additional information
-      description: >
-        If you have any additional information for us, use the field below.
+        Enable debug logging and paste relevant log lines here.
+        Add to `configuration.yaml`:
+        ```yaml
+        logger:
+          default: warning
+          logs:
+            custom_components.rewe: debug
+        ```
+      render: shell
+    validations:
+      required: true
