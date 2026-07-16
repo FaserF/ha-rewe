@@ -92,10 +92,11 @@ def get_final_download_url(download_page_url):
         return urllib.parse.urljoin("https://www.apkmirror.com", clean_url)
 
     # Otherwise look for the intermediate /download/?key= link
-    matches = re.findall(r'href="([^"]*download/\?[^"]+)"', r.text)
-    if matches:
-        intermediate_url = urllib.parse.urljoin("https://www.apkmirror.com", matches[0])
-        return get_final_download_url(intermediate_url)
+    if "download/?" not in download_page_url:
+        matches = re.findall(r'href="([^"]*download/\?[^"]+)"', r.text)
+        if matches:
+            intermediate_url = urllib.parse.urljoin("https://www.apkmirror.com", matches[0])
+            return get_final_download_url(intermediate_url)
 
     # Fallback to key in scripts/attributes
     key_matches = re.findall(r'data-key="([^"]+)"', r.text)

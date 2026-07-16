@@ -1,12 +1,14 @@
-# REWE Discounts (for Home Assistant)
+<div align="center">
+  <h1>REWE Discounts (for Home Assistant) 🛒</h1>
+  <p><strong>A secure, robust Home Assistant integration that fetches weekly offers, discounts, and REWE Bonus details for your local REWE market directly from the official REWE Mobile API.</strong></p>
 
-[![GitHub Release](https://img.shields.io/github/release/FaserF/ha-rewe.svg?style=flat-square)](https://github.com/FaserF/ha-rewe/releases)
-[![License](https://img.shields.io/github/license/FaserF/ha-rewe.svg?style=flat-square)](LICENSE)
-[![hacs](https://img.shields.io/badge/HACS-custom-orange.svg?style=flat-square)](https://hacs.xyz)
-[![Add to Home Assistant](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=rewe)
-[![CI Orchestrator](https://github.com/FaserF/ha-rewe/actions/workflows/ci-orchestrator.yml/badge.svg)](https://github.com/FaserF/ha-rewe/actions/workflows/ci-orchestrator.yml)
+  [![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge)](https://hacs.xyz)
+  [![Downloads (Current release)](https://img.shields.io/github/downloads/FaserF/ha-rewe/latest/rewe.zip?label=Downloads%20(Current%20release)&style=for-the-badge)](https://github.com/FaserF/ha-rewe/releases)
+  [![GitHub Release](https://img.shields.io/github/v/release/FaserF/ha-rewe?style=for-the-badge)](https://github.com/FaserF/ha-rewe/releases)
+  [![License](https://img.shields.io/github/license/FaserF/ha-rewe?style=for-the-badge)](LICENSE)
+</div>
 
-A secure, robust Home Assistant integration that fetches weekly offers, discounts, and REWE Bonus details for your local REWE market directly from the official REWE Mobile API.
+---
 
 ## 🧭 Quick Links
 
@@ -69,6 +71,8 @@ This integration is fully compatible with [HACS](https://hacs.xyz/).
 4. Search for "REWE Discounts".
 5. Install and restart Home Assistant.
 
+[![Open HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=FaserF&repository=ha-rewe&category=integration)
+
 ### Manual Installation
 
 1. Download the latest release zip file.
@@ -77,10 +81,10 @@ This integration is fully compatible with [HACS](https://hacs.xyz/).
 
 ## ⚙️ Configuration
 
-Adding a REWE market is done entirely via the UI. **No YAML configuration is required.**
-
 1. Navigate to **Settings > Devices & Services** in Home Assistant.
 2. Click **Add Integration** and search for **REWE Discounts**.
+
+[![Add Integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=rewe)
 3. Enter your ZIP code or city name to search for nearby REWE markets.
 4. Select your specific market from the dropdown list.
 5. Submit to create the device and entities.
