@@ -36,7 +36,7 @@
       "init": {
         "title": "REWE wöchentliche Angebote konfigurieren",
         "data": {
-          "update_interval": "Aktualisierungsintervall (Minuten, mindestens 10)"
+          "update_interval": "Aktualisierungsintervall (Stunden, mindestens 1, maximal 24)"
         }
       }
     }

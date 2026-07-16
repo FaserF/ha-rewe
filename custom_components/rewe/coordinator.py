@@ -87,22 +87,23 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
         self._cert_path = str(component_dir / CERT_RELATIVE_PATH)
         self._key_path = str(component_dir / KEY_RELATIVE_PATH)
 
-        interval_minutes = max(
+        interval_hours = max(
             MIN_UPDATE_INTERVAL,
             config.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL),
         )
-        if interval_minutes < MIN_UPDATE_INTERVAL:
+        if interval_hours < MIN_UPDATE_INTERVAL:
             _LOGGER.warning(
-                "Update interval %d min is below minimum %d min; enforcing minimum",
-                interval_minutes,
+                "Update interval %d h is below minimum %d h; enforcing minimum",
+                interval_hours,
                 MIN_UPDATE_INTERVAL,
             )
-            interval_minutes = MIN_UPDATE_INTERVAL
+            interval_hours = MIN_UPDATE_INTERVAL
+        interval_minutes = interval_hours * 60
 
         _LOGGER.debug(
-            "Initializing REWE update coordinator for market %s (interval: %d min)",
+            "Initializing REWE update coordinator for market %s (interval: %d h)",
             self.market_id,
-            interval_minutes,
+            interval_hours,
         )
 
         # Construct configuration URL dynamically
@@ -209,7 +210,7 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
         if not self._force_update and self._last_success is not None:
             time_since = dt_util.now() - self._last_success
             effective_interval = self.update_interval or timedelta(
-                minutes=DEFAULT_UPDATE_INTERVAL
+                hours=DEFAULT_UPDATE_INTERVAL
             )
             if time_since < (effective_interval - timedelta(minutes=5)):
                 _LOGGER.info(

@@ -9,9 +9,9 @@ CONF_MARKET_ID = "market_id"
 CONF_UPDATE_INTERVAL = "update_interval"
 
 # Defaults
-DEFAULT_UPDATE_INTERVAL = 180  # minutes
-MIN_UPDATE_INTERVAL = 10  # minutes
-MAX_UPDATE_INTERVAL = 1440  # 24 hours
+DEFAULT_UPDATE_INTERVAL = 24  # hours
+MIN_UPDATE_INTERVAL = 1  # hours
+MAX_UPDATE_INTERVAL = 24  # hours
 
 # Sensor attributes
 ATTR_DISCOUNTS = "discounts"

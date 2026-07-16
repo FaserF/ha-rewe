@@ -95,7 +95,18 @@ You can customise the poll interval of the integration at any time:
 
 1. Go to **Settings > Devices & Services**.
 2. Find **REWE Discounts** and click **Configure**.
-3. Set the **Update Interval** in minutes (default is 180 minutes, minimum is 10 minutes).
+3. Set the **Update Interval** in hours (default is 24 hours, minimum is 1 hour).
+
+## 🃏 Lovelace Cards
+
+The community has built dedicated cards to display REWE discounts beautifully in your dashboard.
+
+### Custom REWE Discounts Card
+A dedicated Lovelace card maintained by the community:
+
+[![REWE Discounts Card](https://img.shields.io/badge/Lovelace-REWE%20Discounts%20Card-brightgreen?style=for-the-badge&logo=home-assistant)](https://github.com/schblondie/ha-rewe-discounts-card)
+
+---
 
 ## 🧑‍💻 Development
 
