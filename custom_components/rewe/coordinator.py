@@ -381,15 +381,26 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
         # Top-level valid date
         until_ts = None
         if isinstance(raw, dict):
-            until_ts = raw.get("untilDate")
+            until_ts = raw.get("untilDate") or raw.get("validUntil")
 
         if until_ts:
-            try:
-                offers_valid_date = time.strftime(
-                    "%Y-%m-%d", time.localtime(until_ts / 1000)
-                )
-            except Exception:
-                offers_valid_date = None
+            if isinstance(until_ts, (int, float)):
+                try:
+                    offers_valid_date = time.strftime(
+                        "%Y-%m-%d", time.localtime(until_ts / 1000)
+                    )
+                except Exception:
+                    offers_valid_date = None
+            elif isinstance(until_ts, str):
+                if "-" in until_ts:
+                    offers_valid_date = until_ts.split("T")[0]
+                else:
+                    try:
+                        offers_valid_date = time.strftime(
+                            "%Y-%m-%d", time.localtime(int(until_ts) / 1000)
+                        )
+                    except Exception:
+                        offers_valid_date = None
 
         categories = []
         if isinstance(raw, dict):
@@ -425,14 +436,25 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
 
                     # Per-offer valid date (fallback to global)
                     item_valid = offers_valid_date
-                    item_until = item.get("validUntil")
+                    item_until = item.get("validUntil") or item.get("untilDate")
                     if item_until:
-                        try:
-                            item_valid = time.strftime(
-                                "%Y-%m-%d", time.localtime(item_until / 1000)
-                            )
-                        except Exception:
-                            pass
+                        if isinstance(item_until, (int, float)):
+                            try:
+                                item_valid = time.strftime(
+                                    "%Y-%m-%d", time.localtime(item_until / 1000)
+                                )
+                            except Exception:
+                                pass
+                        elif isinstance(item_until, str):
+                            if "-" in item_until:
+                                item_valid = item_until.split("T")[0]
+                            else:
+                                try:
+                                    item_valid = time.strftime(
+                                        "%Y-%m-%d", time.localtime(int(item_until) / 1000)
+                                    )
+                                except Exception:
+                                    pass
 
                     # Images
                     images = item.get("images", [])

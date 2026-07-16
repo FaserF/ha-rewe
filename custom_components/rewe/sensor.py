@@ -12,6 +12,8 @@ from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from homeassistant.helpers.device_registry import DeviceInfo
+
 from .const import (
     ATTRIBUTION,
     ATTR_DISCOUNTS,
@@ -42,12 +44,21 @@ class ReweSensor(CoordinatorEntity[ReweDataUpdateCoordinator], SensorEntity):
 
     _attr_icon = "mdi:cart-percent"
     _attr_native_unit_of_measurement = "items"
+    _attr_has_entity_name = True
+    _attr_name = "Offers"
 
     def __init__(self, coordinator: ReweDataUpdateCoordinator) -> None:
         super().__init__(coordinator)
         self._market_id = coordinator.market_id
-        self._attr_name = f"REWE {self._market_id}"
         self._attr_unique_id = f"rewe_{self._market_id}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, self._market_id)},
+            name=coordinator.config_entry.title,
+            manufacturer="REWE",
+            model="Market Offers",
+            entry_type=None,
+            configuration_url="https://www.rewe.de/angebote/",
+        )
         _LOGGER.debug(
             "Initialized ReweSensor for market %s (unique_id: %s)",
             self._market_id,

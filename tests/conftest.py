@@ -18,7 +18,6 @@ if sys.platform == "win32":
 
 
 @pytest.fixture(autouse=True)
-def enable_custom_integrations(hass):
+async def enable_custom_integrations(hass):
     """Enable custom integrations to be loaded in tests."""
     hass.data.pop("custom_components", None)
-    yield
