@@ -1,4 +1,5 @@
 """Test the REWE Discounts diagnostics."""
+
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -19,6 +20,9 @@ async def test_diagnostics(hass: HomeAssistant) -> None:
     coordinator = ReweDataUpdateCoordinator(hass, entry)
     coordinator.data = {
         "discounts": [{"product": "Pringles", "price": "1.49 €"}],
+        "bonus_discounts": [],
+        "next_discounts": [],
+        "next_bonus_discounts": [],
         "valid_until": "2025-07-20",
     }
     hass.data[DOMAIN] = {entry.entry_id: coordinator}
@@ -30,4 +34,7 @@ async def test_diagnostics(hass: HomeAssistant) -> None:
     assert diagnostics["entry"]["options"] == {"update_interval": 30}
     assert diagnostics["coordinator"]["market_id"] == "440421"
     assert diagnostics["coordinator"]["offers_count"] == 1
+    assert diagnostics["coordinator"]["next_offers_count"] == 0
+    assert diagnostics["coordinator"]["bonus_offers_count"] == 0
+    assert diagnostics["coordinator"]["next_bonus_offers_count"] == 0
     assert diagnostics["coordinator"]["has_data"] is True

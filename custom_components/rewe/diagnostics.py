@@ -1,4 +1,5 @@
 """Diagnostics support for REWE weekly offers."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -46,6 +47,17 @@ async def async_get_config_entry_diagnostics(
             else None,
             "has_data": coordinator.data is not None,
             "offers_count": len(coordinator.data.get("discounts", []))
+            if coordinator.data
+            else 0,
+            "next_offers_count": len(coordinator.data.get("next_discounts", []))
+            if coordinator.data
+            else 0,
+            "bonus_offers_count": len(coordinator.data.get("bonus_discounts", []))
+            if coordinator.data
+            else 0,
+            "next_bonus_offers_count": len(
+                coordinator.data.get("next_bonus_discounts", [])
+            )
             if coordinator.data
             else 0,
         },

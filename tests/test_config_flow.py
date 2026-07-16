@@ -11,14 +11,20 @@ pytestmark = pytest.mark.usefixtures("enable_custom_integrations")
 
 async def test_flow_direct_id(hass: HomeAssistant) -> None:
     """Test direct numeric market ID entry (length > 5)."""
-    with patch("custom_components.rewe.config_flow.ReweConfigFlow._check_certs_valid", return_value=True):
+    with patch(
+        "custom_components.rewe.config_flow.ReweConfigFlow._check_certs_valid",
+        return_value=True,
+    ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": config_entries.SOURCE_USER}
         )
     assert result["type"] == "form"
     assert result["step_id"] == "user"
 
-    with patch("custom_components.rewe.config_flow.ReweConfigFlow._check_certs_valid", return_value=True):
+    with patch(
+        "custom_components.rewe.config_flow.ReweConfigFlow._check_certs_valid",
+        return_value=True,
+    ):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {"search_or_id": "440421"},
@@ -30,7 +36,10 @@ async def test_flow_direct_id(hass: HomeAssistant) -> None:
 
 async def test_flow_zip_search_and_select(hass: HomeAssistant) -> None:
     """Test entering a postal code/city search and selecting a market."""
-    with patch("custom_components.rewe.config_flow.ReweConfigFlow._check_certs_valid", return_value=True):
+    with patch(
+        "custom_components.rewe.config_flow.ReweConfigFlow._check_certs_valid",
+        return_value=True,
+    ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": config_entries.SOURCE_USER}
         )
@@ -46,8 +55,13 @@ async def test_flow_zip_search_and_select(hass: HomeAssistant) -> None:
     ]
 
     with (
-        patch("custom_components.rewe.config_flow.ReweConfigFlow._check_certs_valid", return_value=True),
-        patch("custom_components.rewe.config_flow.ReweAPIClient", return_value=mock_client),
+        patch(
+            "custom_components.rewe.config_flow.ReweConfigFlow._check_certs_valid",
+            return_value=True,
+        ),
+        patch(
+            "custom_components.rewe.config_flow.ReweAPIClient", return_value=mock_client
+        ),
     ):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
@@ -72,7 +86,10 @@ async def test_flow_zip_search_and_select(hass: HomeAssistant) -> None:
 async def test_flow_blocking_invalid_certs(hass: HomeAssistant) -> None:
     """Test that missing/invalid certs immediately blocks setup flow."""
     # Force _check_certs_valid to return False
-    with patch("custom_components.rewe.config_flow.ReweConfigFlow._check_certs_valid", return_value=False):
+    with patch(
+        "custom_components.rewe.config_flow.ReweConfigFlow._check_certs_valid",
+        return_value=False,
+    ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": config_entries.SOURCE_USER}
         )
@@ -83,7 +100,10 @@ async def test_flow_blocking_invalid_certs(hass: HomeAssistant) -> None:
     assert result["errors"] == {"base": "missing_certificates"}
 
     # Attempting to submit while still invalid keeps us on the same screen
-    with patch("custom_components.rewe.config_flow.ReweConfigFlow._check_certs_valid", return_value=False):
+    with patch(
+        "custom_components.rewe.config_flow.ReweConfigFlow._check_certs_valid",
+        return_value=False,
+    ):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {},
@@ -92,7 +112,10 @@ async def test_flow_blocking_invalid_certs(hass: HomeAssistant) -> None:
     assert result["step_id"] == "invalid_certs"
 
     # Correcting the certs and submitting lets us proceed
-    with patch("custom_components.rewe.config_flow.ReweConfigFlow._check_certs_valid", return_value=True):
+    with patch(
+        "custom_components.rewe.config_flow.ReweConfigFlow._check_certs_valid",
+        return_value=True,
+    ):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {},
@@ -103,14 +126,23 @@ async def test_flow_blocking_invalid_certs(hass: HomeAssistant) -> None:
 
 async def test_flow_search_error(hass: HomeAssistant) -> None:
     """Test handling of search API failures."""
-    with patch("custom_components.rewe.config_flow.ReweConfigFlow._check_certs_valid", return_value=True):
+    with patch(
+        "custom_components.rewe.config_flow.ReweConfigFlow._check_certs_valid",
+        return_value=True,
+    ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": config_entries.SOURCE_USER}
         )
 
     with (
-        patch("custom_components.rewe.config_flow.ReweConfigFlow._check_certs_valid", return_value=True),
-        patch("custom_components.rewe.config_flow.ReweAPIClient", side_effect=Exception("API failure")),
+        patch(
+            "custom_components.rewe.config_flow.ReweConfigFlow._check_certs_valid",
+            return_value=True,
+        ),
+        patch(
+            "custom_components.rewe.config_flow.ReweAPIClient",
+            side_effect=Exception("API failure"),
+        ),
     ):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
@@ -144,5 +176,3 @@ async def test_options_flow(hass: HomeAssistant) -> None:
 
     assert result["type"] == "create_entry"
     assert result["data"] == {"update_interval": 60}
-
-

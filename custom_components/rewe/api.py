@@ -52,14 +52,18 @@ class ReweAPIClient:
         _LOGGER.debug("Searching for market with query '%s'", query)
         url = "https://mobile-clients-api.rewe.de/api/stationary-markets"
         data = self._request(url, params={"search": query})
-        
+
         # Return list of found markets
         if isinstance(data, dict):
             # GraphQL structure: data -> marketSearch -> markets
             markets = data.get("data", {}).get("marketSearch", {}).get("markets", [])
-            _LOGGER.debug("Market search query '%s' returned %d markets", query, len(markets))
+            _LOGGER.debug(
+                "Market search query '%s' returned %d markets", query, len(markets)
+            )
             return markets
-        _LOGGER.debug("Market search query '%s' returned empty/invalid response format", query)
+        _LOGGER.debug(
+            "Market search query '%s' returned empty/invalid response format", query
+        )
         return []
 
     def get_discounts(self, market_id: str) -> dict[str, Any]:
@@ -67,26 +71,36 @@ class ReweAPIClient:
         _LOGGER.debug("Fetching discounts for market_id: %s", market_id)
         url = f"https://mobile-clients-api.rewe.de/api/stationary-offers/{market_id}"
         data = self._request(url)
-        
+
         if isinstance(data, dict):
-            # GraphQL structure: data -> offers -> current
+            # GraphQL structure: data -> offers -> current / next
             offers_data = data.get("data", {}).get("offers", {})
             current_week = offers_data.get("current", {})
             categories = current_week.get("categories", [])
             valid_until = current_week.get("untilDate", "")
-            
+
+            next_week = offers_data.get("next", {})
+            next_categories = next_week.get("categories", [])
+            next_valid_until = next_week.get("untilDate", "")
+
             # Map to the format returned by the old native library
             parsed_data = {
                 "categories": categories,
                 "validUntil": valid_until,
+                "next_categories": next_categories,
+                "next_validUntil": next_valid_until,
             }
             _LOGGER.debug(
-                "Discounts parsed successfully for market_id %s: %d categories, valid until %s",
+                "Discounts parsed successfully for market_id %s: current (%d cats, valid until %s), next (%d cats, valid until %s)",
                 market_id,
                 len(categories),
                 valid_until,
+                len(next_categories),
+                next_valid_until,
             )
             return parsed_data
-            
-        _LOGGER.warning("Discounts request for market_id %s did not return a dictionary", market_id)
+
+        _LOGGER.warning(
+            "Discounts request for market_id %s did not return a dictionary", market_id
+        )
         return {}

@@ -2,7 +2,7 @@
 
 DOMAIN = "rewe"
 ATTRIBUTION = "Data provided by REWE mobile API"
-PLATFORMS = ["sensor"]
+PLATFORMS = ["sensor", "button"]
 
 # Configuration keys
 CONF_MARKET_ID = "market_id"

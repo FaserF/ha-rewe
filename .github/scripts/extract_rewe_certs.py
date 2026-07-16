@@ -30,16 +30,8 @@ def extract_certs_from_zip(z, out_pem_path, out_key_path):
         if name.endswith(".p12") or name.endswith(".pfx"):
             print(f"Found PKCS12 file: {name}")
             p12_files.append((name, z.read(name)))
-        elif (
-            "cert" in name.lower()
-            or "key" in name.lower()
-            or "mtls" in name.lower()
-        ):
-            if (
-                name.endswith(".pem")
-                or name.endswith(".key")
-                or name.endswith(".crt")
-            ):
+        elif "cert" in name.lower() or "key" in name.lower() or "mtls" in name.lower():
+            if name.endswith(".pem") or name.endswith(".key") or name.endswith(".crt"):
                 print(f"Found potential PEM/CRT file: {name}")
                 pem_files.append((name, z.read(name)))
 
@@ -97,7 +89,7 @@ def extract_certs_from_zip(z, out_pem_path, out_key_path):
                 f.write(key_data)
             print("Successfully extracted certificates directly from PEM assets.")
             return True
-            
+
     return False
 
 
@@ -109,6 +101,7 @@ def extract_certs_from_apk(apk_path, out_dir):
     print(f"Extracting assets from APK: {apk_path}")
 
     import io
+
     with zipfile.ZipFile(apk_path, "r") as z:
         # Check if this is an APK Bundle (contains base.apk)
         if "base.apk" in z.namelist():

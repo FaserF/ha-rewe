@@ -52,7 +52,9 @@ class ReweConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         try:
             from cryptography.x509 import load_pem_x509_certificate
-            from cryptography.hazmat.primitives.serialization import load_pem_private_key
+            from cryptography.hazmat.primitives.serialization import (
+                load_pem_private_key,
+            )
 
             cert_bytes = cert_path.read_bytes()
             key_bytes = key_path.read_bytes()
@@ -75,18 +77,22 @@ class ReweConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         # First verify certificates. If invalid, block user setup
         if not await self.hass.async_add_executor_job(self._check_certs_valid):
-            _LOGGER.warning("Certificates invalid; redirecting user to invalid_certs step")
+            _LOGGER.warning(
+                "Certificates invalid; redirecting user to invalid_certs step"
+            )
             return await self.async_step_invalid_certs()
 
         if user_input is not None:
             user_value = user_input["search_or_id"].strip()
-            
+
             # Direct numeric ID check (only for IDs with length > 5, 5 or fewer is treated as ZIP code search)
             if user_value.isdigit() and len(user_value) > 5:
                 _LOGGER.debug("Direct market ID detected: %s", user_value)
                 await self.async_set_unique_id(user_value)
                 self._abort_if_unique_id_configured()
-                _LOGGER.debug("Creating config entry directly for market ID: %s", user_value)
+                _LOGGER.debug(
+                    "Creating config entry directly for market ID: %s", user_value
+                )
                 return self.async_create_entry(
                     title=f"REWE {user_value}",
                     data={CONF_MARKET_ID: user_value},
@@ -109,7 +115,9 @@ class ReweConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     _LOGGER.info("No markets found matching query '%s'", user_value)
                     errors["base"] = "no_markets_found"
                 else:
-                    _LOGGER.debug("Found %d markets matching query '%s'", len(results), user_value)
+                    _LOGGER.debug(
+                        "Found %d markets matching query '%s'", len(results), user_value
+                    )
                     self._search_results = results
                     return await self.async_step_select_market()
 
@@ -152,18 +160,28 @@ class ReweConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             market_id = user_input[CONF_MARKET_ID]
             await self.async_set_unique_id(market_id)
             self._abort_if_unique_id_configured()
-            
+
             # Find the selected market name for the title
             selected_name = f"REWE {market_id}"
+            entry_data = {CONF_MARKET_ID: market_id}
             for res in self._search_results:
                 if str(res.get("wwIdent")) == market_id:
-                    selected_name = f"REWE {res.get('name', 'Markt')} ({res.get('street', '')})"
+                    selected_name = (
+                        f"REWE {res.get('name', 'Markt')} ({res.get('street', '')})"
+                    )
+                    entry_data["name"] = res.get("name", "REWE Markt")
+                    entry_data["street"] = res.get("street", "")
+                    entry_data["city"] = res.get("city", "")
                     break
 
-            _LOGGER.info("Creating config entry for market: %s (ID: %s)", selected_name, market_id)
+            _LOGGER.info(
+                "Creating config entry for market: %s (ID: %s)",
+                selected_name,
+                market_id,
+            )
             return self.async_create_entry(
                 title=selected_name,
-                data={CONF_MARKET_ID: market_id},
+                data=entry_data,
             )
 
         # Build dropdown options
@@ -206,9 +224,15 @@ class ReweOptionsFlowHandler(config_entries.OptionsFlow):
         self, user_input: dict | None = None
     ) -> config_entries.ConfigFlowResult:
         """Manage the options."""
-        _LOGGER.debug("ReweOptionsFlowHandler async_step_init called with input: %s", user_input)
+        _LOGGER.debug(
+            "ReweOptionsFlowHandler async_step_init called with input: %s", user_input
+        )
         if user_input is not None:
-            _LOGGER.info("Updating options for REWE entry %s: %s", self.config_entry.entry_id, user_input)
+            _LOGGER.info(
+                "Updating options for REWE entry %s: %s",
+                self.config_entry.entry_id,
+                user_input,
+            )
             return self.async_create_entry(title="", data=user_input)
 
         current_interval = self.config_entry.options.get(

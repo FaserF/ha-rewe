@@ -32,14 +32,18 @@ def get_latest_apk_page():
 
     # Find the link to the latest version page
     # Example: /apk/rewe-markt-gmbh/rewe-angebote-coupons/rewe-angebote-coupons-3-46-1-release/ or rewe-supermarkt-5-15-2-release/
-    matches = re.findall(r'href="(/apk/rewe-markt-gmbh/rewe-angebote-coupons/(?:rewe-angebote-coupons|rewe-supermarkt)-[^"]+)"', r.text)
+    matches = re.findall(
+        r'href="(/apk/rewe-markt-gmbh/rewe-angebote-coupons/(?:rewe-angebote-coupons|rewe-supermarkt)-[^"]+)"',
+        r.text,
+    )
     if not matches:
         print("No version links found on listing page.")
         sys.exit(1)
-        
+
     # First match is usually the latest
     latest_href = matches[0]
     return urllib.parse.urljoin("https://www.apkmirror.com", latest_href)
+
 
 def get_download_page(version_url):
     print(f"Fetching version page: {version_url}")
@@ -47,12 +51,18 @@ def get_download_page(version_url):
     if r.status_code != 200:
         print(f"Failed to fetch version page: Status {r.status_code}")
         sys.exit(1)
-        
+
     # Find release variant link or the main download button page
-    matches = re.findall(r'href="(/apk/rewe-markt-gmbh/rewe-angebote-coupons/[^"]+-apk-download/)"', r.text)
+    matches = re.findall(
+        r'href="(/apk/rewe-markt-gmbh/rewe-angebote-coupons/[^"]+-apk-download/)"',
+        r.text,
+    )
     if not matches:
         # Check if there is a variant link
-        matches_variant = re.findall(r'href="(/apk/rewe-markt-gmbh/rewe-angebote-coupons/(?:rewe-angebote-coupons|rewe-supermarkt)-[^"]+-release/[^"]+)"', r.text)
+        matches_variant = re.findall(
+            r'href="(/apk/rewe-markt-gmbh/rewe-angebote-coupons/(?:rewe-angebote-coupons|rewe-supermarkt)-[^"]+-release/[^"]+)"',
+            r.text,
+        )
         if matches_variant:
             variant_url = urllib.parse.urljoin(
                 "https://www.apkmirror.com", matches_variant[0]
@@ -91,7 +101,7 @@ def get_final_download_url(download_page_url):
     key_matches = re.findall(r'data-key="([^"]+)"', r.text)
     if key_matches:
         return f"https://www.apkmirror.com/wp-content/themes/APKMirror/download.php?key={key_matches[0]}"
-        
+
     print("No final download link or data-key found.")
     sys.exit(1)
 

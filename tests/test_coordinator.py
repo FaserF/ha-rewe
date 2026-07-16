@@ -43,7 +43,9 @@ async def test_coordinator_fetch_success(hass: HomeAssistant, caplog) -> None:
 
     with (
         patch("os.path.exists", return_value=True),
-        patch("custom_components.rewe.coordinator.ReweAPIClient", return_value=mock_client),
+        patch(
+            "custom_components.rewe.coordinator.ReweAPIClient", return_value=mock_client
+        ),
         patch("homeassistant.helpers.storage.Store.async_save") as mock_save,
         patch("asyncio.sleep"),
     ):
@@ -92,7 +94,9 @@ async def test_coordinator_backoff_on_rate_limit(hass: HomeAssistant) -> None:
 
     with (
         patch("os.path.exists", return_value=True),
-        patch("custom_components.rewe.coordinator.ReweAPIClient", return_value=mock_client),
+        patch(
+            "custom_components.rewe.coordinator.ReweAPIClient", return_value=mock_client
+        ),
         patch("asyncio.sleep"),
     ):
         with pytest.raises(UpdateFailed):
@@ -100,3 +104,85 @@ async def test_coordinator_backoff_on_rate_limit(hass: HomeAssistant) -> None:
 
         assert coordinator._backoff_until is not None
         assert coordinator._consecutive_failures == 1
+
+
+async def test_bonus_classification_via_loyalty_bonus(hass: HomeAssistant) -> None:
+    """REWE Bonus offers are identified by loyaltyBonus field, not category title."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_MARKET_ID: "440421"},
+        options={},
+    )
+    entry.add_to_hass(hass)
+
+    coordinator = ReweDataUpdateCoordinator(hass, entry)
+
+    categories = [
+        {
+            "title": "Top-Angebote",
+            "offers": [
+                {
+                    "title": "Normal Offer",
+                    "subtitle": "",
+                    "priceData": {"price": "1.99 €"},
+                    # no loyaltyBonus → regular offer
+                },
+                {
+                    "title": "REWE Bonus Offer",
+                    "subtitle": "",
+                    "priceData": {"price": "2.99 €"},
+                    "loyaltyBonus": {"bonusValue": 50, "bonusType": "cent"},
+                },
+            ],
+        }
+    ]
+
+    regular = coordinator._parse_categories(
+        categories, "2025-07-20", include_bonus=False
+    )
+    bonus = coordinator._parse_categories(categories, "2025-07-20", include_bonus=True)
+
+    assert len(regular) == 1
+    assert regular[0]["product"] == "Normal Offer"
+
+    assert len(bonus) == 1
+    assert bonus[0]["product"] == "REWE Bonus Offer"
+    assert bonus[0]["loyalty_bonus_value"] == 50
+    assert bonus[0]["loyalty_bonus_type"] == "cent"
+
+
+async def test_configuration_url_slug_generation(hass: HomeAssistant) -> None:
+    """Test that configuration_url is correctly slugified from city/street/name."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_MARKET_ID: "440421",
+            "city": "Zorneding",
+            "street": "Georg-Wimmer-Ring 6",
+            "name": "REWE Markt",
+        },
+        options={},
+    )
+    entry.add_to_hass(hass)
+
+    coordinator = ReweDataUpdateCoordinator(hass, entry)
+
+    assert "zorneding" in coordinator.configuration_url
+    assert "440421" in coordinator.configuration_url
+    assert "rewe-markt" in coordinator.configuration_url
+    assert coordinator.configuration_url.startswith("https://www.rewe.de/angebote/")
+
+
+async def test_configuration_url_fallback(hass: HomeAssistant) -> None:
+    """Test that configuration_url falls back to marketId query param when no city data."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_MARKET_ID: "440421"},
+        options={},
+    )
+    entry.add_to_hass(hass)
+
+    coordinator = ReweDataUpdateCoordinator(hass, entry)
+
+    assert "440421" in coordinator.configuration_url
+    assert "marketId=440421" in coordinator.configuration_url

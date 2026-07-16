@@ -18,6 +18,8 @@ import asyncio
 import logging
 import os
 import random
+import re
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -97,7 +99,39 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
             )
             interval_minutes = MIN_UPDATE_INTERVAL
 
-        _LOGGER.debug("Initializing REWE update coordinator for market %s (interval: %d min)", self.market_id, interval_minutes)
+        _LOGGER.debug(
+            "Initializing REWE update coordinator for market %s (interval: %d min)",
+            self.market_id,
+            interval_minutes,
+        )
+
+        # Construct configuration URL dynamically
+        city = entry.data.get("city")
+        street = entry.data.get("street")
+        name = entry.data.get("name", "REWE Markt")
+
+        if city and street:
+
+            def _slugify(text: str) -> str:
+                text = text.lower()
+                text = (
+                    text.replace("\u00e4", "ae")
+                    .replace("\u00f6", "oe")
+                    .replace("\u00fc", "ue")
+                    .replace("\u00df", "ss")
+                )
+                text = re.sub(r"[^a-z0-9\s-]", "", text)
+                text = re.sub(r"[\s-]+", "-", text)
+                return text.strip("-")
+
+            city_slug = _slugify(city)
+            name_slug = _slugify(name)
+            street_slug = _slugify(street)
+            self.configuration_url = f"https://www.rewe.de/angebote/{city_slug}/{self.market_id}/{name_slug}-{street_slug}/"
+        else:
+            self.configuration_url = (
+                f"https://www.rewe.de/angebote/?marketId={self.market_id}"
+            )
 
         super().__init__(
             hass,
@@ -113,15 +147,34 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
 
     async def async_load_cache(self) -> None:
         """Load cached data from HA storage (restart-resistance)."""
-        _LOGGER.debug("Attempting to load cached REWE data for market %s", self.market_id)
+        _LOGGER.debug(
+            "Attempting to load cached REWE data for market %s", self.market_id
+        )
         cache = await self.store.async_load()
         if cache:
-            _LOGGER.debug("Successfully loaded cached REWE data for market %s", self.market_id)
+            # Validate cache schema – discard stale cache if mandatory keys are missing.
+            # This handles cases where data-key renames would otherwise serve zeros.
+            required_keys = {"discounts", "bonus_discounts", "valid_until"}
+            if not required_keys.issubset(cache.keys()):
+                _LOGGER.info(
+                    "REWE cache for market %s is outdated (missing keys: %s) – discarding",
+                    self.market_id,
+                    required_keys - cache.keys(),
+                )
+                await self.store.async_remove()
+                return
+
+            _LOGGER.debug(
+                "Successfully loaded cached REWE data for market %s", self.market_id
+            )
             self.data = cache
             if "last_success" in cache:
                 try:
                     self._last_success = dt_util.parse_datetime(cache["last_success"])
-                    _LOGGER.debug("Loaded last success timestamp from cache: %s", self._last_success)
+                    _LOGGER.debug(
+                        "Loaded last success timestamp from cache: %s",
+                        self._last_success,
+                    )
                 except (ValueError, TypeError):
                     self._last_success = None
         else:
@@ -185,7 +238,8 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
                     "REWE market %s: acquired domain-wide fetch lock",
                     self.market_id,
                 )
-                if not self._force_update:
+                is_first_fetch = self._last_success is None
+                if not self._force_update and not is_first_fetch:
                     jitter = random.uniform(5.0, 30.0)
                     _LOGGER.debug(
                         "REWE market %s: waiting %.1f s jitter before fetch to prevent rate limits",
@@ -193,6 +247,11 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
                         jitter,
                     )
                     await asyncio.sleep(jitter)
+                elif is_first_fetch:
+                    _LOGGER.debug(
+                        "REWE market %s: first fetch – skipping jitter",
+                        self.market_id,
+                    )
                 else:
                     _LOGGER.info(
                         "REWE market %s: forced update, skipping jitter",
@@ -200,13 +259,19 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
                     )
                     self._force_update = False
 
-                _LOGGER.debug("REWE market %s: initiating API call via executor job", self.market_id)
+                _LOGGER.debug(
+                    "REWE market %s: initiating API call via executor job",
+                    self.market_id,
+                )
                 async with asyncio.timeout(90):
                     data = await self.hass.async_add_executor_job(
                         self._fetch_offers_sync
                     )
 
-            _LOGGER.debug("REWE market %s: fetch completed, updating success metadata", self.market_id)
+            _LOGGER.debug(
+                "REWE market %s: fetch completed, updating success metadata",
+                self.market_id,
+            )
             self._last_success = dt_util.now()
             self._consecutive_failures = 0
             data["last_success"] = self._last_success.isoformat()
@@ -214,7 +279,10 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
 
             # Clear any active repair issue
             if self._issue_created:
-                _LOGGER.debug("REWE market %s: clearing active connection repair issue", self.market_id)
+                _LOGGER.debug(
+                    "REWE market %s: clearing active connection repair issue",
+                    self.market_id,
+                )
                 ir.async_delete_issue(self.hass, DOMAIN, ISSUE_ID_CONNECTION)
                 self._issue_created = False
 
@@ -282,7 +350,9 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
 
     def _fetch_offers_sync(self) -> dict[str, Any]:
         """Fetch and parse REWE offers using ReweAPIClient + mTLS certs."""
-        _LOGGER.debug("REWE market %s: starting synchronous fetch sequence", self.market_id)
+        _LOGGER.debug(
+            "REWE market %s: starting synchronous fetch sequence", self.market_id
+        )
         self._check_certs()
 
         try:
@@ -323,6 +393,7 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
             )
             # Create a HA Repair issue
             try:
+
                 @callback
                 def _create_issue() -> None:
                     ir.async_create_issue(
@@ -334,9 +405,12 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
                         translation_key="missing_certificates",
                         learn_more_url="https://github.com/FaserF/ha-rewe#certificates",
                     )
+
                 self.hass.add_job(_create_issue)
             except Exception as e:
-                _LOGGER.error("Failed to create missing certificate repair issue: %s", e)
+                _LOGGER.error(
+                    "Failed to create missing certificate repair issue: %s", e
+                )
 
             raise RuntimeError(
                 f"REWE mTLS certificate files not found: {missing}. "
@@ -349,72 +423,99 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
     # ------------------------------------------------------------------
 
     def _parse_discounts(self, raw: dict | list) -> dict[str, Any]:
-        """Parse the rewerse get_discounts response into HA-friendly format.
-
-        The rewerse response structure (from GetDiscounts):
-        {
-          "categories": [
-            {
-              "title": "Topangebote",
-              "offers": [
-                {
-                  "title": "Pringles Chips",
-                  "subtitle": "versch. Sorten, je 185-g-Dose",
-                  "priceData": {"price": "1,49 €", ...},
-                  "images": ["https://..."],
-                  "validUntil": 1752969600000,  # epoch ms (optional)
-                  ...
-                },
-                ...
-              ]
-            },
-            ...
-          ],
-          "untilDate": 1752969600000
-        }
-        """
-        import time
-
+        """Parse the rewerse get_discounts response into HA-friendly format."""
         discounts: list[dict[str, Any]] = []
+        bonus_discounts: list[dict[str, Any]] = []
         offers_valid_date: str | None = None
+        next_discounts: list[dict[str, Any]] = []
+        next_bonus_discounts: list[dict[str, Any]] = []
+        next_valid_date: str | None = None
 
-        # Top-level valid date
-        until_ts = None
         if isinstance(raw, dict):
+            # Parse current week
             until_ts = raw.get("untilDate") or raw.get("validUntil")
-
-        if until_ts:
-            if isinstance(until_ts, (int, float)):
-                try:
-                    offers_valid_date = time.strftime(
-                        "%Y-%m-%d", time.localtime(until_ts / 1000)
-                    )
-                except Exception:
-                    offers_valid_date = None
-            elif isinstance(until_ts, str):
-                if "-" in until_ts:
-                    offers_valid_date = until_ts.split("T")[0]
-                else:
-                    try:
-                        offers_valid_date = time.strftime(
-                            "%Y-%m-%d", time.localtime(int(until_ts) / 1000)
-                        )
-                    except Exception:
-                        offers_valid_date = None
-
-        categories = []
-        if isinstance(raw, dict):
+            if until_ts:
+                offers_valid_date = self._parse_date_field(until_ts)
             categories = raw.get("categories", [])
-        elif isinstance(raw, list):
-            categories = raw
+            discounts = self._parse_categories(
+                categories, offers_valid_date, include_bonus=False
+            )
+            bonus_discounts = self._parse_categories(
+                categories, offers_valid_date, include_bonus=True
+            )
 
+            # Parse next week if available
+            next_until_ts = raw.get("next_validUntil")
+            if next_until_ts:
+                next_valid_date = self._parse_date_field(next_until_ts)
+            next_categories = raw.get("next_categories", [])
+            next_discounts = self._parse_categories(
+                next_categories, next_valid_date, include_bonus=False
+            )
+            next_bonus_discounts = self._parse_categories(
+                next_categories, next_valid_date, include_bonus=True
+            )
+        elif isinstance(raw, list):
+            discounts = self._parse_categories(raw, None, include_bonus=False)
+            bonus_discounts = self._parse_categories(raw, None, include_bonus=True)
+
+        _LOGGER.debug(
+            "REWE market %s: parsed %d current offers (%d bonus), %d next offers (%d bonus)",
+            self.market_id,
+            len(discounts),
+            len(bonus_discounts),
+            len(next_discounts),
+            len(next_bonus_discounts),
+        )
+
+        return {
+            "discounts": discounts,
+            "bonus_discounts": bonus_discounts,
+            "valid_until": offers_valid_date,
+            "next_discounts": next_discounts,
+            "next_bonus_discounts": next_bonus_discounts,
+            "next_valid_until": next_valid_date,
+            "market_id": self.market_id,
+        }
+
+    def _parse_date_field(self, value: Any) -> str | None:
+        """Parse timestamp/string into YYYY-MM-DD string."""
+        if isinstance(value, (int, float)):
+            try:
+                return time.strftime("%Y-%m-%d", time.localtime(value / 1000))
+            except Exception:
+                return None
+        if isinstance(value, str):
+            if "-" in value:
+                return value.split("T")[0]
+            try:
+                return time.strftime("%Y-%m-%d", time.localtime(int(value) / 1000))
+            except Exception:
+                return None
+        return None
+
+    def _parse_categories(
+        self,
+        categories: list,
+        offers_valid_date: str | None,
+        include_bonus: bool = False,
+    ) -> list[dict[str, Any]]:
+        """Parse categories into a list of offers.
+
+        REWE Bonus offers are NOT in a dedicated category – they live across all
+        categories and are identified by the presence of a ``loyaltyBonus`` field
+        on the individual offer object.
+        """
+        discounts: list[dict[str, Any]] = []
         for category in categories:
             cat_title = category.get("title", "Unbekannt")
-            if "payback" in cat_title.lower():
-                continue  # skip Payback offers
 
             for item in category.get("offers", []):
                 try:
+                    is_bonus = bool(item.get("loyaltyBonus"))
+                    if is_bonus != include_bonus:
+                        continue
+
                     title = (
                         item.get("title", "")
                         .replace("\n", " ")
@@ -438,50 +539,33 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
                     item_valid = offers_valid_date
                     item_until = item.get("validUntil") or item.get("untilDate")
                     if item_until:
-                        if isinstance(item_until, (int, float)):
-                            try:
-                                item_valid = time.strftime(
-                                    "%Y-%m-%d", time.localtime(item_until / 1000)
-                                )
-                            except Exception:
-                                pass
-                        elif isinstance(item_until, str):
-                            if "-" in item_until:
-                                item_valid = item_until.split("T")[0]
-                            else:
-                                try:
-                                    item_valid = time.strftime(
-                                        "%Y-%m-%d", time.localtime(int(item_until) / 1000)
-                                    )
-                                except Exception:
-                                    pass
+                        item_valid = self._parse_date_field(item_until)
 
                     # Images
                     images = item.get("images", [])
                     image_url = images[0] if images else None
 
-                    discounts.append(
-                        {
-                            ATTR_DISCOUNT_TITLE: title,
-                            ATTR_DISCOUNT_PRICE: price,
-                            ATTR_BASE_PRICE: subtitle,
-                            ATTR_PICTURE: image_url,
-                            ATTR_VALID_DATE: item_valid,
-                            ATTR_CATEGORY: cat_title,
-                        }
-                    )
+                    # REWE Bonus points / cents
+                    loyalty = item.get("loyaltyBonus")
+                    loyalty_value: int | None = None
+                    loyalty_type: str | None = None
+                    if isinstance(loyalty, dict):
+                        loyalty_value = loyalty.get("bonusValue")
+                        loyalty_type = loyalty.get("bonusType")
+
+                    entry: dict[str, Any] = {
+                        ATTR_DISCOUNT_TITLE: title,
+                        ATTR_DISCOUNT_PRICE: price,
+                        ATTR_BASE_PRICE: subtitle,
+                        ATTR_PICTURE: image_url,
+                        ATTR_VALID_DATE: item_valid,
+                        ATTR_CATEGORY: cat_title,
+                    }
+                    if loyalty_value is not None:
+                        entry["loyalty_bonus_value"] = loyalty_value
+                        entry["loyalty_bonus_type"] = loyalty_type
+
+                    discounts.append(entry)
                 except Exception as exc:
                     _LOGGER.debug("Skipping malformed offer item: %s – %s", item, exc)
-
-        _LOGGER.debug(
-            "REWE market %s: parsed %d offers across %d categories",
-            self.market_id,
-            len(discounts),
-            len(categories),
-        )
-
-        return {
-            "discounts": discounts,
-            "valid_until": offers_valid_date,
-            "market_id": self.market_id,
-        }
+        return discounts

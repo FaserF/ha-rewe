@@ -70,8 +70,5 @@ async def async_unload_entry(
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
-    _LOGGER.debug(
-        "Unload result for REWE entry %s: %s", entry.entry_id, unload_ok
-    )
+    _LOGGER.debug("Unload result for REWE entry %s: %s", entry.entry_id, unload_ok)
     return unload_ok
-

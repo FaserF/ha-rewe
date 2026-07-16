@@ -28,3 +28,11 @@ A custom Home Assistant integration that fetches weekly offers (discounts) for a
 2. Click **Add Integration** and search for **REWE Discounts**.
 3. Enter your numeric **REWE Market ID** (e.g. `440421`). You can find this ID in the URL when searching for your market on [rewe.de](https://www.rewe.de).
 4. Enjoy your new weekly offers sensor!
+
+## Credits & Acknowledgements
+
+This integration relies on the findings, reverse-engineering work, and community research from the following projects:
+
+- **[ByteSizedMarius/rewerse-engineering](https://github.com/ByteSizedMarius/rewerse-engineering)**: For mapping out the REWE mobile API and providing Go/Python wrappers.
+- **[foo-git/rewe-discounts](https://github.com/foo-git/rewe-discounts)**: For key discussions, especially Issue #19, which helped uncover the GraphQL endpoint structures, request headers, and mTLS integration.
+- **[torbenpfohl/rewe-discounts](https://github.com/torbenpfohl/rewe-discounts)**: For the initial research and documentation regarding certificate extraction from the official REWE APK.
