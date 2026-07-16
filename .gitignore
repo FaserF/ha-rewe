@@ -63,8 +63,7 @@ venv.bak/
 *.swo
 
 # Local assets / cache
-custom_components/rewe/certs/client.pem
-custom_components/rewe/certs/client.key
+custom_components/rewe/certs/
 rewe.apk
 scratch/
 temp_certs/
