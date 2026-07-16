@@ -1,7 +1,7 @@
 """Constants for the REWE Discounts integration."""
 
 DOMAIN = "rewe"
-ATTRIBUTION = "Data provided by REWE mobile API via rewerse"
+ATTRIBUTION = "Data provided by REWE mobile API"
 PLATFORMS = ["sensor"]
 
 # Configuration keys

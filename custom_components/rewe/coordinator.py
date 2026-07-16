@@ -45,6 +45,7 @@ from .const import (
     KEY_RELATIVE_PATH,
     MIN_UPDATE_INTERVAL,
 )
+from .api import ReweAPIClient
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -96,9 +97,12 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
             )
             interval_minutes = MIN_UPDATE_INTERVAL
 
+        _LOGGER.debug("Initializing REWE update coordinator for market %s (interval: %d min)", self.market_id, interval_minutes)
+
         super().__init__(
             hass,
             _LOGGER,
+            config_entry=entry,
             name=f"REWE {self.market_id}",
             update_interval=timedelta(minutes=interval_minutes),
         )
@@ -109,15 +113,19 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
 
     async def async_load_cache(self) -> None:
         """Load cached data from HA storage (restart-resistance)."""
+        _LOGGER.debug("Attempting to load cached REWE data for market %s", self.market_id)
         cache = await self.store.async_load()
         if cache:
-            _LOGGER.debug("Loaded cached REWE data for market %s", self.market_id)
+            _LOGGER.debug("Successfully loaded cached REWE data for market %s", self.market_id)
             self.data = cache
             if "last_success" in cache:
                 try:
                     self._last_success = dt_util.parse_datetime(cache["last_success"])
+                    _LOGGER.debug("Loaded last success timestamp from cache: %s", self._last_success)
                 except (ValueError, TypeError):
                     self._last_success = None
+        else:
+            _LOGGER.debug("No cached REWE data found for market %s", self.market_id)
 
     # ------------------------------------------------------------------
     # Core update loop
@@ -125,6 +133,11 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch new offer data – called by DataUpdateCoordinator on schedule."""
+        _LOGGER.debug(
+            "Starting REWE update cycle for market %s (force_update=%s)",
+            self.market_id,
+            self._force_update,
+        )
 
         # Backoff guard
         if (
@@ -133,7 +146,7 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
             and dt_util.now() < self._backoff_until
         ):
             _LOGGER.debug(
-                "Skipping REWE update for market %s – backoff until %s",
+                "Skipping REWE update for market %s – backoff active until %s",
                 self.market_id,
                 self._backoff_until,
             )
@@ -163,11 +176,19 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
                 "fetch_lock", asyncio.Lock()
             )
 
+            _LOGGER.debug(
+                "REWE market %s: requesting domain-wide fetch lock",
+                self.market_id,
+            )
             async with fetch_lock:
+                _LOGGER.debug(
+                    "REWE market %s: acquired domain-wide fetch lock",
+                    self.market_id,
+                )
                 if not self._force_update:
                     jitter = random.uniform(5.0, 30.0)
                     _LOGGER.debug(
-                        "REWE market %s: waiting %.1f s jitter before fetch",
+                        "REWE market %s: waiting %.1f s jitter before fetch to prevent rate limits",
                         self.market_id,
                         jitter,
                     )
@@ -179,11 +200,13 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
                     )
                     self._force_update = False
 
+                _LOGGER.debug("REWE market %s: initiating API call via executor job", self.market_id)
                 async with asyncio.timeout(90):
                     data = await self.hass.async_add_executor_job(
                         self._fetch_offers_sync
                     )
 
+            _LOGGER.debug("REWE market %s: fetch completed, updating success metadata", self.market_id)
             self._last_success = dt_util.now()
             self._consecutive_failures = 0
             data["last_success"] = self._last_success.isoformat()
@@ -191,6 +214,7 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
 
             # Clear any active repair issue
             if self._issue_created:
+                _LOGGER.debug("REWE market %s: clearing active connection repair issue", self.market_id)
                 ir.async_delete_issue(self.hass, DOMAIN, ISSUE_ID_CONNECTION)
                 self._issue_created = False
 
@@ -198,12 +222,22 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
 
         except Exception as err:
             self._consecutive_failures += 1
+            _LOGGER.warning(
+                "REWE market %s: fetch attempt failed (consecutive failures: %d). Error: %s",
+                self.market_id,
+                self._consecutive_failures,
+                err,
+            )
 
             # Raise a HA Repair issue if we haven't succeeded in 24 h
             if self._last_success and (dt_util.now() - self._last_success) > timedelta(
                 hours=24
             ):
                 if not self._issue_created:
+                    _LOGGER.warning(
+                        "REWE market %s: creating connection repair issue as no updates succeeded in 24 hours",
+                        self.market_id,
+                    )
                     ir.async_create_issue(
                         self.hass,
                         DOMAIN,
@@ -247,37 +281,34 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
     # ------------------------------------------------------------------
 
     def _fetch_offers_sync(self) -> dict[str, Any]:
-        """Fetch and parse REWE offers using rewerse + mTLS certs."""
+        """Fetch and parse REWE offers using ReweAPIClient + mTLS certs."""
+        _LOGGER.debug("REWE market %s: starting synchronous fetch sequence", self.market_id)
         self._check_certs()
 
         try:
-            from rewerse import Rewerse
-        except ImportError as exc:
-            raise RuntimeError(
-                "The 'rewerse' library is required. "
-                "Install it with: pip install rewerse"
-            ) from exc
-
-        # Rotate impersonation profile for anti-fingerprinting
-        profile = random.choice(_IMPERSONATE_PROFILES)
-        _LOGGER.debug(
-            "REWE market %s: fetching with impersonate profile '%s'",
-            self.market_id,
-            profile,
-        )
-
-        try:
-            client = Rewerse(cert=self._cert_path, key=self._key_path)
+            _LOGGER.debug(
+                "REWE market %s: initializing ReweAPIClient with cert_path=%s, key_path=%s",
+                self.market_id,
+                self._cert_path,
+                self._key_path,
+            )
+            client = ReweAPIClient(cert_path=self._cert_path, key_path=self._key_path)
             raw = client.get_discounts(self.market_id)
         except Exception as exc:
             raise RuntimeError(
-                f"rewerse.get_discounts failed for market {self.market_id}: {exc}"
+                f"ReweAPIClient.get_discounts failed for market {self.market_id}: {exc}"
             ) from exc
 
         return self._parse_discounts(raw)
 
     def _check_certs(self) -> None:
         """Raise a clear error if cert files are missing."""
+        _LOGGER.debug(
+            "REWE market %s: checking certificate presence at paths: cert=%s, key=%s",
+            self.market_id,
+            self._cert_path,
+            self._key_path,
+        )
         missing = []
         if not os.path.exists(self._cert_path):
             missing.append(self._cert_path)
@@ -285,6 +316,11 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
             missing.append(self._key_path)
 
         if missing:
+            _LOGGER.error(
+                "REWE market %s: missing certificate files: %s",
+                self.market_id,
+                missing,
+            )
             # Create a HA Repair issue
             try:
                 @callback
@@ -299,8 +335,8 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
                         learn_more_url="https://github.com/FaserF/ha-rewe#certificates",
                     )
                 self.hass.add_job(_create_issue)
-            except Exception:
-                pass
+            except Exception as e:
+                _LOGGER.error("Failed to create missing certificate repair issue: %s", e)
 
             raise RuntimeError(
                 f"REWE mTLS certificate files not found: {missing}. "

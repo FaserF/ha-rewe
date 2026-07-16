@@ -13,6 +13,10 @@
         "data": {
           "market_id": "Select Market"
         }
+      },
+      "invalid_certs": {
+        "title": "mTLS Certificates Missing or Invalid",
+        "description": "The client certificates required to authenticate with the REWE API are missing or invalid.\n\nPlease place your 'client.pem' and 'client.key' in the 'custom_components/rewe/certs/' directory to proceed.\n\nFor instructions on how to extract these certificates from the REWE app, see the [GitHub README](https://github.com/FaserF/ha-rewe#certificates)."
       }
     },
     "abort": {
@@ -22,10 +26,8 @@
     "error": {
       "invalid_market_id": "Please enter a valid numeric market ID.",
       "search_failed": "Failed to query the REWE market API. Please enter your ID manually.",
-      "search_library_failed": "The search system library is not supported on this platform. Please enter your ID manually.",
       "missing_certificates": "mTLS certificates are missing. Please enter your ID manually.",
       "no_markets_found": "No REWE markets found matching your query. Please try another search or enter ID manually.",
-      "missing_rewerse_library": "The required library 'rewerse' is missing.",
       "unknown": "Unknown Error occurred."
     }
   },

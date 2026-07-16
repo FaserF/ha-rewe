@@ -8,7 +8,8 @@ from typing import Any
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.const import ATTR_ATTRIBUTION
-from homeassistant.helpers.typing import ConfigType, HomeAssistantType
+from homeassistant import config_entries
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
@@ -24,12 +25,15 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
-    hass: HomeAssistantType,
-    entry: ConfigType,
+    hass: HomeAssistant,
+    entry: config_entries.ConfigEntry,
     async_add_entities: Any,
 ) -> None:
     """Set up REWE Discounts sensor from a config entry."""
     coordinator: ReweDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
+    _LOGGER.debug(
+        "Setting up REWE Discounts sensor for market %s", coordinator.market_id
+    )
     async_add_entities([ReweSensor(coordinator)], update_before_add=False)
 
 
@@ -44,6 +48,11 @@ class ReweSensor(CoordinatorEntity[ReweDataUpdateCoordinator], SensorEntity):
         self._market_id = coordinator.market_id
         self._attr_name = f"REWE {self._market_id}"
         self._attr_unique_id = f"rewe_{self._market_id}"
+        _LOGGER.debug(
+            "Initialized ReweSensor for market %s (unique_id: %s)",
+            self._market_id,
+            self._attr_unique_id,
+        )
 
     @property
     def native_value(self) -> int | None:

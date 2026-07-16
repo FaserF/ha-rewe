@@ -79,7 +79,7 @@ jobs:
           python .github/scripts/calculate_release_details.py
 
       - name: Upload Release Body
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: release-body
           path: release_body.md
@@ -117,6 +117,25 @@ jobs:
             python .github/scripts/update_templates.py "${{ needs.versioning.outputs.version }}"
           fi
 
+      - name: Upload Updated Components
+
+
+        uses: actions/upload-artifact@v4
+
+
+        with:
+
+
+          name: updated-components
+
+
+          path: custom_components/
+
+
+          retention-days: 1
+
+
+
       - name: Commit and Push
         run: |
           git add custom_components/*/manifest.json .github/ISSUE_TEMPLATE/*.yml .github/ISSUE_TEMPLATE/*.yaml 2>/dev/null || true
@@ -126,7 +145,7 @@ jobs:
           fi
 
       - name: Download Release Body
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           name: release-body
 
@@ -196,13 +215,29 @@ jobs:
         run: |
           python .github/scripts/extract_rewe_certs.py rewe.apk custom_components/rewe/certs
 
+      - name: Download Updated Components
+
+
+        uses: actions/download-artifact@v4
+
+
+        with:
+
+
+          name: updated-components
+
+
+          path: custom_components/
+
+
+
       - name: 📦 Zip Component
         run: |
           cd custom_components/rewe
           zip -r ../../rewe.zip .
 
       - name: Download Release Body Artifact
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           name: release-body
 
@@ -277,3 +312,16 @@ jobs:
             gh api -X DELETE "repos/$REPO/releases/$release_id"
             gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
           fi
+
+
+ 
+      - name: Delete Component Artifact
+
+ 
+        uses: actions/delete-artifact@v4
+
+ 
+        with:
+
+ 
+          name: updated-components

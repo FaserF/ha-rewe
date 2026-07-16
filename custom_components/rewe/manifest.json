@@ -5,6 +5,6 @@
   "config_flow": true,
   "documentation": "https://github.com/FaserF/ha-rewe",
   "iot_class": "cloud_polling",
-  "requirements": ["rewerse>=1.2.0", "curl_cffi>=0.7.0"],
+  "requirements": ["curl_cffi>=0.7.0"],
   "version": "2026.07.1"
 }
