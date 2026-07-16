@@ -147,6 +147,7 @@ class ReweConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="invalid_certs",
             errors={"base": "missing_certificates"},
+            description_placeholders={"readme_url": "https://github.com/FaserF/ha-rewe#certificates"},
         )
 
     async def async_step_select_market(

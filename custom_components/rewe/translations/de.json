@@ -1,20 +1,54 @@
 {
-    "config": {
-      "flow_title": "Rewe Einrichtung",
-      "step": {
-        "user": {
-          "description": "Finde deine Rewe Markt ID auf https://www.rewe.de/",
-          "data": {
-            "market_id": "Rewe Markt ID"
-          }
+  "config": {
+    "flow_title": "REWE wöchentliche Angebote einrichten",
+    "step": {
+      "user": {
+        "description": "Gib deine REWE-Markt-ID direkt ein oder gib deine Stadt / Postleitzahl ein, um nach nahegelegenen REWE-Märkten zu suchen.",
+        "data": {
+          "search_or_id": "REWE-Markt-ID oder Suchanfrage"
         }
       },
-      "abort": {
-        "already_configured": "Diese Rewe Markt ID ist bereits konfiguriert."
+      "select_market": {
+        "description": "Wähle deinen REWE-Markt aus den Suchergebnissen unten aus.",
+        "data": {
+          "market_id": "Markt auswählen"
+        }
       },
-      "error": {
-        "invalid_station": "Ungültige Markt ID",
-        "unknown": "Unbekannter Fehler"
+      "invalid_certs": {
+        "title": "mTLS-Zertifikate fehlen oder sind ungültig",
+        "description": "Die zur Authentifizierung mit der REWE-API erforderlichen Client-Zertifikate fehlen oder sind ungültig.\n\nBitte lege deine 'client.pem' und 'client.key' im Verzeichnis 'custom_components/rewe/certs/' ab, um fortzufahren.\n\nEine Anleitung zum Extrahieren dieser Zertifikate aus der REWE-App findest du in der README unter {readme_url}."
+      }
+    },
+    "abort": {
+      "already_configured": "Dieser REWE-Markt ist bereits konfiguriert.",
+      "no_markets_found": "Keine REWE-Märkte gefunden, die deiner Suchanfrage entsprechen."
+    },
+    "error": {
+      "invalid_market_id": "Bitte gib eine gültige numerische Markt-ID ein.",
+      "search_failed": "Abfrage der REWE-Markt-API fehlgeschlagen. Bitte gib deine ID manuell ein.",
+      "missing_certificates": "mTLS-Zertifikate fehlen. Bitte gib deine ID manuell ein.",
+      "no_markets_found": "Keine REWE-Märkte gefunden, die deiner Suchanfrage entsprechen. Bitte versuche eine andere Suche oder gib die ID manuell ein.",
+      "unknown": "Ein unbekannter Fehler ist aufgetreten."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "REWE wöchentliche Angebote konfigurieren",
+        "data": {
+          "update_interval": "Aktualisierungsintervall (Minuten, mindestens 10)"
+        }
       }
     }
+  },
+  "issues": {
+    "connection_error": {
+      "title": "Fehler bei der Kommunikation mit der REWE-API",
+      "description": "Die Integration kann keine Angebote abrufen. Bitte überprüfe die Protokolle."
+    },
+    "missing_certificates": {
+      "title": "Fehlende REWE mTLS-Zertifikate",
+      "description": "Die zur Authentifizierung mit der REWE-API erforderlichen Client-Zertifikate fehlen. Bitte installiere die Integration über HACS neu."
+    }
   }
+}
