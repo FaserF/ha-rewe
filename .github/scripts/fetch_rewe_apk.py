@@ -18,15 +18,15 @@ headers = {
 def main():
     output_path = "rewe.apk" if len(sys.argv) < 2 else sys.argv[1]
     pkg = "de.rewe.app.mobile"
-    
+
     urls = [
         f"https://d.apkpure.net/b/APK/{pkg}?version=latest",
-        f"https://d.apkpure.com/b/APK/{pkg}?version=latest"
+        f"https://d.apkpure.com/b/APK/{pkg}?version=latest",
     ]
-    
+
     last_error = None
     success = False
-    
+
     for url in urls:
         print(f"Downloading latest REWE APK: {url}")
         try:
@@ -55,7 +55,9 @@ def main():
             last_error = e
 
     if not success:
-        print(f"Error executing APK downloader: All mirrors failed. Last error: {last_error}")
+        print(
+            f"Error executing APK downloader: All mirrors failed. Last error: {last_error}"
+        )
         sys.exit(1)
 
 
