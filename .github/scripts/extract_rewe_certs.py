@@ -44,7 +44,7 @@ def extract_certs_from_zip(z, out_pem_path, out_key_path):
                     private_key, certificate, additional_certificates = (
                         pkcs12.load_key_and_certificates(data, pw)
                     )
-                    print(f"Successfully decoded {name} using password '{pw.decode()}'")
+                    print(f"Successfully decoded {name}")
 
                     # Serialize private key
                     pem_key = private_key.private_bytes(
