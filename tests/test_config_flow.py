@@ -80,7 +80,12 @@ async def test_flow_zip_search_and_select(hass: HomeAssistant) -> None:
 
     assert result["type"] == "create_entry"
     assert "REWE Markt Garching" in result["title"]
-    assert result["data"] == {CONF_MARKET_ID: "123456"}
+    assert result["data"] == {
+        CONF_MARKET_ID: "123456",
+        "name": "REWE Markt Garching",
+        "street": "Einsteinstr. 1",
+        "city": "Garching",
+    }
 
 
 async def test_flow_blocking_invalid_certs(hass: HomeAssistant) -> None:
