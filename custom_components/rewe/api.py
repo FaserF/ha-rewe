@@ -44,13 +44,17 @@ class ReweAPIClient:
         elif "recipe-hub" in url:
             log_endpoint = "GET /api/v3/recipe-hub"
         elif "offers" in url:
-            log_endpoint = "GET /api/mobile-discounts/v1/stationary/markets/{market_id}/offers"
+            log_endpoint = (
+                "GET /api/mobile-discounts/v1/stationary/markets/{market_id}/offers"
+            )
         else:
             log_endpoint = "GET /api/unknown"
 
         log_has_params = "yes" if params else "no"
 
-        _LOGGER.debug("Sending GET request: %s (has_params: %s)", log_endpoint, log_has_params)
+        _LOGGER.debug(
+            "Sending GET request: %s (has_params: %s)", log_endpoint, log_has_params
+        )
         try:
             response = requests.get(
                 url,
