@@ -432,7 +432,7 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
                     service_portfolio = client.get_service_portfolio(str(zip_code))
                 except Exception as e:
                     _LOGGER.warning(
-                        "Could not fetch service portfolio for %s: %s", zip_code, e
+                        "Could not fetch service portfolio: %s", e
                     )
 
             # Fetch recipe of the day

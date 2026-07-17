@@ -32,7 +32,15 @@ class ReweAPIClient:
             "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
         }
 
-        _LOGGER.debug("Sending GET request to url: %s (params: %s)", url, params)
+        log_url = url
+        if "service-portfolio" in url:
+            log_url = "https://mobile-clients-api.rewe.de/api/service-portfolio/****"
+
+        log_params = params
+        if params and "search" in params:
+            log_params = {"search": "****"}
+
+        _LOGGER.debug("Sending GET request to url: %s (params: %s)", log_url, log_params)
         try:
             response = requests.get(
                 url,
@@ -50,19 +58,19 @@ class ReweAPIClient:
                     self.cookies.update(dict(response.cookies))
             _LOGGER.debug(
                 "Received response from %s: status_code=%s, content_length=%s",
-                url,
+                log_url,
                 response.status_code,
                 len(response.content) if response.content else 0,
             )
             response.raise_for_status()
             return response.json()
         except Exception as exc:
-            _LOGGER.error("REWE API request failed for %s: %s", url, exc)
+            _LOGGER.error("REWE API request failed for %s: %s", log_url, exc)
             raise RuntimeError(f"REWE API request failed: {exc}") from exc
 
     def market_search(self, query: str) -> list[dict[str, Any]]:
         """Search for REWE markets using ZIP code, city name, or market name."""
-        _LOGGER.debug("Searching for market with query '%s'", query)
+        _LOGGER.debug("Searching for market")
         url = "https://mobile-clients-api.rewe.de/api/stationary-markets"
         data = self._request(url, params={"search": query})
 
@@ -147,7 +155,7 @@ class ReweAPIClient:
 
     def get_service_portfolio(self, zip_code: str) -> dict[str, Any]:
         """Fetch service availability for a ZIP code."""
-        _LOGGER.debug("Fetching service portfolio for zip: %s", zip_code)
+        _LOGGER.debug("Fetching service portfolio")
         url = f"https://mobile-clients-api.rewe.de/api/service-portfolio/{zip_code}"
         data = self._request(url)
 
