@@ -1,9 +1,11 @@
 """Test the REWE Discounts coordinator."""
 
+from datetime import timedelta
 from unittest.mock import MagicMock, patch
 import pytest
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
+from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.rewe.coordinator import ReweDataUpdateCoordinator
 from custom_components.rewe.const import DOMAIN, CONF_MARKET_ID
@@ -245,3 +247,30 @@ async def test_coordinator_cookie_persistence(hass: HomeAssistant) -> None:
         )
 
         assert entry.data.get("cookies") == {"old_session": "123", "new_session": "456"}
+
+
+async def test_coordinator_is_data_valid(hass: HomeAssistant) -> None:
+    """Test coordinator is_data_valid property behavior."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_MARKET_ID: "440421"},
+        options={},
+    )
+    entry.add_to_hass(hass)
+
+    coordinator = ReweDataUpdateCoordinator(hass, entry)
+
+    # No data/no last success -> False
+    assert coordinator.is_data_valid is False
+
+    # Mock data and success timestamp
+    coordinator.data = {"discounts": []}
+
+    # 1. Success was yesterday (in current week) -> True
+    now = dt_util.now()
+    coordinator._last_success = now - timedelta(days=1)
+    assert coordinator.is_data_valid is True
+
+    # 2. Success was 10 days ago (previous week) -> False
+    coordinator._last_success = now - timedelta(days=10)
+    assert coordinator.is_data_valid is False

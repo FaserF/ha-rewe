@@ -151,7 +151,7 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
         """Return True if the current cached data is from the current week and valid."""
         if not self.data or not self._last_success:
             return False
-        
+
         now = dt_util.now()
         current_monday = (now - timedelta(days=now.weekday())).replace(
             hour=0, minute=0, second=0, microsecond=0

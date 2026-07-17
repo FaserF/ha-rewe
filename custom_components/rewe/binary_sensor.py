@@ -97,8 +97,8 @@ class ReweDeliveryAvailableSensor(
     def available(self) -> bool:
         """Return True if coordinator has data."""
         return (
-            self.coordinator.last_update_success and self.coordinator.data is not None
-        )
+            self.coordinator.last_update_success or self.coordinator.is_data_valid
+        ) and self.coordinator.data is not None
 
 
 class RewePickupAvailableSensor(
@@ -169,5 +169,5 @@ class RewePickupAvailableSensor(
     def available(self) -> bool:
         """Return True if coordinator has data."""
         return (
-            self.coordinator.last_update_success and self.coordinator.data is not None
-        )
+            self.coordinator.last_update_success or self.coordinator.is_data_valid
+        ) and self.coordinator.data is not None

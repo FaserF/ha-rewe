@@ -101,8 +101,8 @@ class ReweSensor(CoordinatorEntity[ReweDataUpdateCoordinator], SensorEntity):
     def available(self) -> bool:
         """Return True if coordinator has data."""
         return (
-            self.coordinator.last_update_success and self.coordinator.data is not None
-        )
+            self.coordinator.last_update_success or self.coordinator.is_data_valid
+        ) and self.coordinator.data is not None
 
 
 class ReweNextSensor(CoordinatorEntity[ReweDataUpdateCoordinator], SensorEntity):
@@ -155,8 +155,8 @@ class ReweNextSensor(CoordinatorEntity[ReweDataUpdateCoordinator], SensorEntity)
     def available(self) -> bool:
         """Return True if coordinator has data."""
         return (
-            self.coordinator.last_update_success and self.coordinator.data is not None
-        )
+            self.coordinator.last_update_success or self.coordinator.is_data_valid
+        ) and self.coordinator.data is not None
 
 
 class ReweBonusSensor(CoordinatorEntity[ReweDataUpdateCoordinator], SensorEntity):
@@ -209,8 +209,8 @@ class ReweBonusSensor(CoordinatorEntity[ReweDataUpdateCoordinator], SensorEntity
     def available(self) -> bool:
         """Return True if coordinator has data."""
         return (
-            self.coordinator.last_update_success and self.coordinator.data is not None
-        )
+            self.coordinator.last_update_success or self.coordinator.is_data_valid
+        ) and self.coordinator.data is not None
 
 
 class ReweNextBonusSensor(CoordinatorEntity[ReweDataUpdateCoordinator], SensorEntity):
@@ -263,8 +263,8 @@ class ReweNextBonusSensor(CoordinatorEntity[ReweDataUpdateCoordinator], SensorEn
     def available(self) -> bool:
         """Return True if coordinator has data."""
         return (
-            self.coordinator.last_update_success and self.coordinator.data is not None
-        )
+            self.coordinator.last_update_success or self.coordinator.is_data_valid
+        ) and self.coordinator.data is not None
 
 
 class ReweMarketStatusSensor(
@@ -349,8 +349,8 @@ class ReweMarketStatusSensor(
     def available(self) -> bool:
         """Return True if coordinator has data."""
         return (
-            self.coordinator.last_update_success and self.coordinator.data is not None
-        )
+            self.coordinator.last_update_success or self.coordinator.is_data_valid
+        ) and self.coordinator.data is not None
 
 
 class ReweRecallsSensor(CoordinatorEntity[ReweDataUpdateCoordinator], SensorEntity):
@@ -413,8 +413,8 @@ class ReweRecallsSensor(CoordinatorEntity[ReweDataUpdateCoordinator], SensorEnti
     def available(self) -> bool:
         """Return True if coordinator has data."""
         return (
-            self.coordinator.last_update_success and self.coordinator.data is not None
-        )
+            self.coordinator.last_update_success or self.coordinator.is_data_valid
+        ) and self.coordinator.data is not None
 
 
 class ReweRecipeOfTheDaySensor(
@@ -477,5 +477,5 @@ class ReweRecipeOfTheDaySensor(
     def available(self) -> bool:
         """Return True if coordinator has data."""
         return (
-            self.coordinator.last_update_success and self.coordinator.data is not None
-        )
+            self.coordinator.last_update_success or self.coordinator.is_data_valid
+        ) and self.coordinator.data is not None
