@@ -146,6 +146,18 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
     # Public helpers
     # ------------------------------------------------------------------
 
+    @property
+    def is_data_valid(self) -> bool:
+        """Return True if the current cached data is from the current week and valid."""
+        if not self.data or not self._last_success:
+            return False
+        
+        now = dt_util.now()
+        current_monday = (now - timedelta(days=now.weekday())).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        return self._last_success >= current_monday
+
     async def async_load_cache(self) -> None:
         """Load cached data from HA storage (restart-resistance)."""
         _LOGGER.debug(
@@ -155,7 +167,15 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
         if cache:
             # Validate cache schema – discard stale cache if mandatory keys are missing.
             # This handles cases where data-key renames would otherwise serve zeros.
-            required_keys = {"discounts", "bonus_discounts", "valid_until"}
+            required_keys = {
+                "discounts",
+                "bonus_discounts",
+                "valid_until",
+                "market_details",
+                "recalls",
+                "service_portfolio",
+                "recipe_hub",
+            }
             if not required_keys.issubset(cache.keys()):
                 _LOGGER.info(
                     "REWE cache for market %s is outdated (missing keys: %s) – discarding",

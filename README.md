@@ -26,10 +26,14 @@ It groups all sensors under a single market device and implements advanced lock-
 
 - **🛒 Detailed Offers Sensors**:
   - **Offers**: Current week's discounted items count, with attributes detailing titles, base prices, active discount prices, categories, and direct links to product images.
-  - **Offers Preview**: Next week's upcoming deals (automatically populates as soon as REWE publishes them, usually from Saturday onwards).
+  - **Offers Preview**: Next week's upcoming deals.
 - **⭐ REWE Bonus Point Tracking**:
   - **REWE Bonus**: Displays the count of items in the current week that yield loyalty points/cashback. Attributes list detailed bonus values and types (e.g. points/cents).
   - **REWE Bonus Preview**: Upcoming deals next week that will yield bonus points.
+
+> [!NOTE]
+> **Offers Preview** and **REWE Bonus Preview** show `0` items during the week (Sunday through Friday) and only populate starting on **Saturdays**, because REWE publishes next week's offers and bonus discounts only on Saturdays.
+
 - **🛡️ Rate-Limiting & Anti-Ban Protections**:
   - **First-Fetch Optimisation**: Skips jitter sleep on initial setup so first refresh completes instantly.
   - **Lock Queueing**: A domain-wide lock ensures concurrent updates (e.g., after a reboot) run sequentially.
