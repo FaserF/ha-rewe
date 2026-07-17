@@ -186,3 +186,40 @@ async def test_configuration_url_fallback(hass: HomeAssistant) -> None:
 
     assert "440421" in coordinator.configuration_url
     assert "marketId=440421" in coordinator.configuration_url
+
+
+async def test_coordinator_cookie_persistence(hass: HomeAssistant) -> None:
+    """Test that coordinator persists session cookies in the config entry."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_MARKET_ID: "440421", "cookies": {"old_session": "123"}},
+        options={},
+    )
+    entry.add_to_hass(hass)
+
+    coordinator = ReweDataUpdateCoordinator(hass, entry)
+
+    mock_client = MagicMock()
+    mock_client.get_discounts.return_value = {
+        "categories": [],
+        "untilDate": 1752969600000,
+    }
+    mock_client.cookies = {"old_session": "123", "new_session": "456"}
+
+    with (
+        patch("os.path.exists", return_value=True),
+        patch(
+            "custom_components.rewe.coordinator.ReweAPIClient", return_value=mock_client
+        ) as mock_client_class,
+        patch("homeassistant.helpers.storage.Store.async_save"),
+        patch("asyncio.sleep"),
+    ):
+        await coordinator._async_update_data()
+
+        mock_client_class.assert_called_once_with(
+            cert_path=coordinator._cert_path,
+            key_path=coordinator._key_path,
+            cookies={"old_session": "123"},
+        )
+
+        assert entry.data.get("cookies") == {"old_session": "123", "new_session": "456"}

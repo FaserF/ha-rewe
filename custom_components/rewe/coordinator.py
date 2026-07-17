@@ -265,8 +265,9 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
                     self.market_id,
                 )
                 async with asyncio.timeout(90):
-                    data = await self.hass.async_add_executor_job(
-                        self._fetch_offers_sync
+                    existing_cookies = self.config_entry.data.get("cookies", {})
+                    data, new_cookies = await self.hass.async_add_executor_job(
+                        self._fetch_offers_sync, existing_cookies
                     )
 
             _LOGGER.debug(
@@ -277,6 +278,16 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
             self._consecutive_failures = 0
             data["last_success"] = self._last_success.isoformat()
             await self.store.async_save(data)
+
+            if new_cookies != existing_cookies:
+                _LOGGER.debug(
+                    "REWE market %s: updating session cookies in config entry",
+                    self.market_id,
+                )
+                self.hass.config_entries.async_update_entry(
+                    self.config_entry,
+                    data={**self.config_entry.data, "cookies": new_cookies},
+                )
 
             # Clear any active repair issue
             if self._issue_created:
@@ -349,7 +360,9 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
     # Synchronous fetch (runs in executor thread)
     # ------------------------------------------------------------------
 
-    def _fetch_offers_sync(self) -> dict[str, Any]:
+    def _fetch_offers_sync(
+        self, cookies: dict[str, str]
+    ) -> tuple[dict[str, Any], dict[str, str]]:
         """Fetch and parse REWE offers using ReweAPIClient + mTLS certs."""
         _LOGGER.debug(
             "REWE market %s: starting synchronous fetch sequence", self.market_id
@@ -363,14 +376,32 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
                 self._cert_path,
                 self._key_path,
             )
-            client = ReweAPIClient(cert_path=self._cert_path, key_path=self._key_path)
+            client = ReweAPIClient(
+                cert_path=self._cert_path,
+                key_path=self._key_path,
+                cookies=cookies,
+            )
             raw = client.get_discounts(self.market_id)
+
+            # Fetch market details (opening hours, address, name)
+            try:
+                market_details = client.get_market_details(self.market_id)
+            except Exception as e:
+                _LOGGER.warning(
+                    "Could not fetch market details for market %s: %s",
+                    self.market_id,
+                    e,
+                )
+                market_details = {}
         except Exception as exc:
             raise RuntimeError(
                 f"ReweAPIClient.get_discounts failed for market {self.market_id}: {exc}"
             ) from exc
 
-        return self._parse_discounts(raw)
+        parsed = self._parse_discounts(raw)
+        parsed["market_details"] = market_details
+        cookies = client.cookies if isinstance(client.cookies, dict) else {}
+        return parsed, cookies
 
     def _check_certs(self) -> None:
         """Raise a clear error if cert files are missing."""

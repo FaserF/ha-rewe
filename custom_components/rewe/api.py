@@ -12,10 +12,16 @@ _LOGGER = logging.getLogger(__name__)
 class ReweAPIClient:
     """API client that interacts directly with REWE mobile endpoints using mTLS."""
 
-    def __init__(self, cert_path: str, key_path: str) -> None:
-        """Initialize the client with mTLS certificate paths."""
+    def __init__(
+        self,
+        cert_path: str,
+        key_path: str,
+        cookies: dict[str, str] | None = None,
+    ) -> None:
+        """Initialize the client with mTLS certificate paths and optional cookies."""
         self.cert_path = cert_path
         self.key_path = key_path
+        self.cookies: dict[str, str] = cookies or {}
 
     def _request(self, url: str, params: dict[str, Any] | None = None) -> Any:
         """Perform a secure GET request using curl_cffi with mTLS."""
@@ -33,8 +39,15 @@ class ReweAPIClient:
                 params=params,
                 headers=headers,
                 cert=(self.cert_path, self.key_path),
+                cookies=self.cookies,
                 timeout=30.0,
             )
+            # Update cookies with any new ones returned in the response
+            if response.cookies:
+                if hasattr(response.cookies, "get_dict"):
+                    self.cookies.update(response.cookies.get_dict())
+                else:
+                    self.cookies.update(dict(response.cookies))
             _LOGGER.debug(
                 "Received response from %s: status_code=%s, content_length=%s",
                 url,
@@ -102,5 +115,20 @@ class ReweAPIClient:
 
         _LOGGER.warning(
             "Discounts request for market_id %s did not return a dictionary", market_id
+        )
+        return {}
+
+    def get_market_details(self, market_id: str) -> dict[str, Any]:
+        """Fetch details (opening hours, address, name) for the given market ID."""
+        _LOGGER.debug("Fetching market details for market_id: %s", market_id)
+        url = f"https://mobile-clients-api.rewe.de/api/stationary-markets/{market_id}"
+        data = self._request(url)
+
+        if isinstance(data, dict):
+            return data.get("data", {}).get("market", {})
+
+        _LOGGER.warning(
+            "Market details request for market_id %s did not return a dictionary",
+            market_id,
         )
         return {}

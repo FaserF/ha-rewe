@@ -12,6 +12,7 @@ from custom_components.rewe.sensor import (
     ReweNextSensor,
     ReweBonusSensor,
     ReweNextBonusSensor,
+    ReweMarketStatusSensor,
 )
 
 
@@ -48,6 +49,24 @@ def _make_coordinator(hass: HomeAssistant, entry: MockConfigEntry) -> MagicMock:
         ],
         "valid_until": "2025-07-20",
         "next_valid_until": "2025-07-27",
+        "market_details": {
+            "wwIdent": "440421",
+            "name": "REWE Markt Georg Wimmer",
+            "companyName": "REWE Georg Wimmer oHG",
+            "phone": "08106-12345",
+            "street": "Georg-Wimmer-Ring 6",
+            "zipCode": "85604",
+            "city": "Zorneding",
+            "location": {"latitude": 48.083, "longitude": 11.823},
+            "openingStatus": {
+                "openState": "OPEN",
+                "infoText": "bis 20:00 Uhr",
+                "statusText": "Geöffnet",
+            },
+            "openingInfo": [{"days": "Mo - Sa", "hours": "07:00 - 20:00"}],
+            "category": {"marketTypeDisplayName": "REWE Markt"},
+            "serviceFlags": {"hasPickup": True},
+        },
     }
     return coordinator
 
@@ -65,13 +84,14 @@ async def test_sensors_setup(hass: HomeAssistant) -> None:
 
     assert async_add_entities.called
     entities = async_add_entities.call_args[0][0]
-    assert len(entities) == 4
+    assert len(entities) == 5
     types = {type(e) for e in entities}
     assert types == {
         ReweSensor,
         ReweNextSensor,
         ReweBonusSensor,
         ReweNextBonusSensor,
+        ReweMarketStatusSensor,
     }
 
 
@@ -162,3 +182,27 @@ async def test_sensor_unavailable_when_no_data(hass: HomeAssistant) -> None:
 
     sensor = ReweSensor(coordinator)
     assert sensor.native_value is None
+
+
+async def test_market_status_sensor(hass: HomeAssistant) -> None:
+    """Test market status sensor values and attributes."""
+    entry = MockConfigEntry(domain=DOMAIN, data={CONF_MARKET_ID: "440421"}, options={})
+    entry.add_to_hass(hass)
+
+    coordinator = _make_coordinator(hass, entry)
+    hass.data[DOMAIN] = {entry.entry_id: coordinator}
+
+    sensor = ReweMarketStatusSensor(coordinator)
+    assert sensor.native_value == "Geöffnet"
+    attrs = sensor.extra_state_attributes
+    assert attrs["company_name"] == "REWE Georg Wimmer oHG"
+    assert attrs["phone"] == "08106-12345"
+    assert attrs["street"] == "Georg-Wimmer-Ring 6"
+    assert attrs["zip_code"] == "85604"
+    assert attrs["city"] == "Zorneding"
+    assert attrs["latitude"] == 48.083
+    assert attrs["longitude"] == 11.823
+    assert attrs["open_state"] == "OPEN"
+    assert attrs["info_text"] == "bis 20:00 Uhr"
+    assert attrs["market_type"] == "REWE Markt"
+    assert attrs["has_pickup"] is True

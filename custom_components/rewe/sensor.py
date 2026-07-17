@@ -41,6 +41,7 @@ async def async_setup_entry(
             ReweNextSensor(coordinator),
             ReweBonusSensor(coordinator),
             ReweNextBonusSensor(coordinator),
+            ReweMarketStatusSensor(coordinator),
         ],
         update_before_add=False,
     )
@@ -253,6 +254,81 @@ class ReweNextBonusSensor(CoordinatorEntity[ReweDataUpdateCoordinator], SensorEn
             CONF_MARKET_ID: self._market_id,
             ATTR_DISCOUNTS: data.get("next_bonus_discounts", []),
             ATTR_VALID_DATE: data.get("next_valid_until"),
+            ATTR_ATTRIBUTION: ATTRIBUTION,
+        }
+
+    @property
+    def available(self) -> bool:
+        """Return True if coordinator has data."""
+        return (
+            self.coordinator.last_update_success and self.coordinator.data is not None
+        )
+
+
+class ReweMarketStatusSensor(
+    CoordinatorEntity[ReweDataUpdateCoordinator], SensorEntity
+):
+    """Represents status (open/closed) and metadata of the local REWE market."""
+
+    _attr_icon = "mdi:store"
+    _attr_has_entity_name = True
+    _attr_name = "Market Status"
+
+    def __init__(self, coordinator: ReweDataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        self._market_id = coordinator.market_id
+        self._attr_unique_id = f"rewe_{self._market_id}_status"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, self._market_id)},
+            name=coordinator.config_entry.title,
+            manufacturer="REWE",
+            model="Market Offers",
+            entry_type=None,
+            configuration_url=coordinator.configuration_url,
+        )
+        _LOGGER.debug(
+            "Initialized ReweMarketStatusSensor for market %s (unique_id: %s)",
+            self._market_id,
+            self._attr_unique_id,
+        )
+
+    @property
+    def native_value(self) -> str | None:
+        """Return the opening status text (e.g. Geöffnet / Geschlossen)."""
+        if not self.coordinator.data:
+            return None
+        market_details = self.coordinator.data.get("market_details")
+        if not market_details:
+            return None
+        opening_status = market_details.get("openingStatus", {})
+        return opening_status.get("statusText")
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return detailed market metadata."""
+        if not self.coordinator.data:
+            return {ATTR_ATTRIBUTION: ATTRIBUTION}
+
+        market_details = self.coordinator.data.get("market_details") or {}
+        opening_status = market_details.get("openingStatus", {})
+        category = market_details.get("category", {})
+        service_flags = market_details.get("serviceFlags", {})
+        location = market_details.get("location", {})
+
+        return {
+            CONF_MARKET_ID: self._market_id,
+            "company_name": market_details.get("companyName"),
+            "phone": market_details.get("phone"),
+            "street": market_details.get("street"),
+            "zip_code": market_details.get("zipCode"),
+            "city": market_details.get("city"),
+            "latitude": location.get("latitude"),
+            "longitude": location.get("longitude"),
+            "open_state": opening_status.get("openState"),
+            "info_text": opening_status.get("infoText"),
+            "opening_hours": market_details.get("openingInfo", []),
+            "market_type": category.get("marketTypeDisplayName"),
+            "has_pickup": service_flags.get("hasPickup"),
             ATTR_ATTRIBUTION: ATTRIBUTION,
         }
 
