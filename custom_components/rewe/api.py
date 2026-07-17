@@ -40,7 +40,9 @@ class ReweAPIClient:
         if params and "search" in params:
             log_params = {"search": "****"}
 
-        _LOGGER.debug("Sending GET request to url: %s (params: %s)", log_url, log_params)
+        _LOGGER.debug(
+            "Sending GET request to url: %s (params: %s)", log_url, log_params
+        )
         try:
             response = requests.get(
                 url,
