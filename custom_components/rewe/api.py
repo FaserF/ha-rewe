@@ -132,3 +132,39 @@ class ReweAPIClient:
             market_id,
         )
         return {}
+
+    def get_recalls(self) -> list[dict[str, Any]]:
+        """Fetch active product recalls."""
+        _LOGGER.debug("Fetching active product recalls")
+        url = "https://mobile-clients-api.rewe.de/api/products/recalls"
+        data = self._request(url)
+
+        if isinstance(data, dict):
+            return data.get("data", {}).get("productRecalls", {}).get("products", [])
+
+        _LOGGER.warning("Recalls request did not return a dictionary")
+        return []
+
+    def get_service_portfolio(self, zip_code: str) -> dict[str, Any]:
+        """Fetch service availability for a ZIP code."""
+        _LOGGER.debug("Fetching service portfolio for zip: %s", zip_code)
+        url = f"https://mobile-clients-api.rewe.de/api/service-portfolio/{zip_code}"
+        data = self._request(url)
+
+        if isinstance(data, dict):
+            return data.get("data", {}).get("servicePortfolio", {})
+
+        _LOGGER.warning("Service portfolio request did not return a dictionary")
+        return {}
+
+    def get_recipe_hub(self) -> dict[str, Any]:
+        """Fetch recipe hub/recipe of the day."""
+        _LOGGER.debug("Fetching recipe hub")
+        url = "https://mobile-api.rewe.de/api/v3/recipe-hub"
+        data = self._request(url)
+
+        if isinstance(data, dict):
+            return data
+
+        _LOGGER.warning("Recipe hub request did not return a dictionary")
+        return {}

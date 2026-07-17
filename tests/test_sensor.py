@@ -13,6 +13,8 @@ from custom_components.rewe.sensor import (
     ReweBonusSensor,
     ReweNextBonusSensor,
     ReweMarketStatusSensor,
+    ReweRecallsSensor,
+    ReweRecipeOfTheDaySensor,
 )
 
 
@@ -67,12 +69,30 @@ def _make_coordinator(hass: HomeAssistant, entry: MockConfigEntry) -> MagicMock:
             "category": {"marketTypeDisplayName": "REWE Markt"},
             "serviceFlags": {"hasPickup": True},
         },
+        "recalls": [
+            {
+                "url": "https://mediacenter.rewe.de/produktrueckrufe/Raffelberger%20Mineralbrunnen",
+                "subjectProduct": 'Vorsorglicher Produktrückruf "Raffelberger Mineralbrunnen"',
+                "subjectReason": "bakterielle Verunreinigung",
+            }
+        ],
+        "recipe_hub": {
+            "recipeOfTheDay": {
+                "id": "9e6418b8-b1ef-4d49-8de5-9d09ffda6028",
+                "title": "Zucchinigemüse mit Lachs",
+                "detailUrl": "https://www.rewe.de/rezepte/zucchinigemuese/",
+                "imageUrl": "https://c.rewe-static.de/31191263/10/31191263.png",
+                "duration": "35 min",
+                "difficultyLevel": 1,
+                "difficultyDescription": "Einfach",
+            }
+        },
     }
     return coordinator
 
 
 async def test_sensors_setup(hass: HomeAssistant) -> None:
-    """Test that four sensors are registered."""
+    """Test that seven sensors are registered."""
     entry = MockConfigEntry(domain=DOMAIN, data={CONF_MARKET_ID: "440421"}, options={})
     entry.add_to_hass(hass)
 
@@ -84,7 +104,7 @@ async def test_sensors_setup(hass: HomeAssistant) -> None:
 
     assert async_add_entities.called
     entities = async_add_entities.call_args[0][0]
-    assert len(entities) == 5
+    assert len(entities) == 7
     types = {type(e) for e in entities}
     assert types == {
         ReweSensor,
@@ -92,6 +112,8 @@ async def test_sensors_setup(hass: HomeAssistant) -> None:
         ReweBonusSensor,
         ReweNextBonusSensor,
         ReweMarketStatusSensor,
+        ReweRecallsSensor,
+        ReweRecipeOfTheDaySensor,
     }
 
 
@@ -206,3 +228,40 @@ async def test_market_status_sensor(hass: HomeAssistant) -> None:
     assert attrs["info_text"] == "bis 20:00 Uhr"
     assert attrs["market_type"] == "REWE Markt"
     assert attrs["has_pickup"] is True
+
+
+async def test_recalls_sensor(hass: HomeAssistant) -> None:
+    """Test recalls sensor values and attributes."""
+    entry = MockConfigEntry(domain=DOMAIN, data={CONF_MARKET_ID: "440421"}, options={})
+    entry.add_to_hass(hass)
+
+    coordinator = _make_coordinator(hass, entry)
+    hass.data[DOMAIN] = {entry.entry_id: coordinator}
+
+    sensor = ReweRecallsSensor(coordinator)
+    assert sensor.native_value == 1
+    attrs = sensor.extra_state_attributes
+    assert (
+        attrs["recalls"][0]["product"]
+        == 'Vorsorglicher Produktrückruf "Raffelberger Mineralbrunnen"'
+    )
+    assert attrs["recalls"][0]["reason"] == "bakterielle Verunreinigung"
+
+
+async def test_recipe_sensor(hass: HomeAssistant) -> None:
+    """Test recipe of the day sensor values and attributes."""
+    entry = MockConfigEntry(domain=DOMAIN, data={CONF_MARKET_ID: "440421"}, options={})
+    entry.add_to_hass(hass)
+
+    coordinator = _make_coordinator(hass, entry)
+    hass.data[DOMAIN] = {entry.entry_id: coordinator}
+
+    sensor = ReweRecipeOfTheDaySensor(coordinator)
+    assert sensor.native_value == "Zucchinigemüse mit Lachs"
+    attrs = sensor.extra_state_attributes
+    assert attrs["recipe_id"] == "9e6418b8-b1ef-4d49-8de5-9d09ffda6028"
+    assert attrs["detail_url"] == "https://www.rewe.de/rezepte/zucchinigemuese/"
+    assert attrs["image_url"] == "https://c.rewe-static.de/31191263/10/31191263.png"
+    assert attrs["duration"] == "35 min"
+    assert attrs["difficulty_description"] == "Einfach"
+    assert attrs["difficulty_level"] == 1

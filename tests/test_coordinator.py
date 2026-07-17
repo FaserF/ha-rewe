@@ -40,6 +40,24 @@ async def test_coordinator_fetch_success(hass: HomeAssistant, caplog) -> None:
 
     mock_client = MagicMock()
     mock_client.get_discounts.return_value = mock_data
+    mock_client.get_market_details.return_value = {
+        "wwIdent": "440421",
+        "zipCode": "85604",
+    }
+    mock_client.get_recalls.return_value = [
+        {
+            "subjectProduct": "Raffelberger Mineralbrunnen",
+            "subjectReason": "Verunreinigung",
+            "url": "https://url",
+        }
+    ]
+    mock_client.get_service_portfolio.return_value = {
+        "customerZipCode": "85604",
+        "deliveryMarket": {"wwIdent": "320530"},
+    }
+    mock_client.get_recipe_hub.return_value = {
+        "recipeOfTheDay": {"title": "Zucchinigemüse"}
+    }
 
     with (
         patch("os.path.exists", return_value=True),
@@ -53,6 +71,10 @@ async def test_coordinator_fetch_success(hass: HomeAssistant, caplog) -> None:
         assert res["valid_until"] == "2025-07-20"
         assert len(res["discounts"]) == 1
         assert res["discounts"][0]["product"] == "Pringles"
+        assert res["market_details"]["wwIdent"] == "440421"
+        assert len(res["recalls"]) == 1
+        assert res["service_portfolio"]["customerZipCode"] == "85604"
+        assert res["recipe_hub"]["recipeOfTheDay"]["title"] == "Zucchinigemüse"
         mock_save.assert_called_once()
 
 

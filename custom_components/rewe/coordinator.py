@@ -393,6 +393,35 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
                     e,
                 )
                 market_details = {}
+
+            zip_code = self.config_entry.data.get("zipCode")
+            if not zip_code and market_details:
+                zip_code = market_details.get("zipCode")
+
+            # Fetch active recalls
+            try:
+                recalls = client.get_recalls()
+            except Exception as e:
+                _LOGGER.warning("Could not fetch REWE recalls: %s", e)
+                recalls = []
+
+            # Fetch service portfolio
+            service_portfolio = {}
+            if zip_code:
+                try:
+                    service_portfolio = client.get_service_portfolio(str(zip_code))
+                except Exception as e:
+                    _LOGGER.warning(
+                        "Could not fetch service portfolio for %s: %s", zip_code, e
+                    )
+
+            # Fetch recipe of the day
+            try:
+                recipe_hub = client.get_recipe_hub()
+            except Exception as e:
+                _LOGGER.warning("Could not fetch recipe hub: %s", e)
+                recipe_hub = {}
+
         except Exception as exc:
             raise RuntimeError(
                 f"ReweAPIClient.get_discounts failed for market {self.market_id}: {exc}"
@@ -400,6 +429,9 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
 
         parsed = self._parse_discounts(raw)
         parsed["market_details"] = market_details
+        parsed["recalls"] = recalls
+        parsed["service_portfolio"] = service_portfolio
+        parsed["recipe_hub"] = recipe_hub
         cookies = client.cookies if isinstance(client.cookies, dict) else {}
         return parsed, cookies
 

@@ -42,6 +42,8 @@ async def async_setup_entry(
             ReweBonusSensor(coordinator),
             ReweNextBonusSensor(coordinator),
             ReweMarketStatusSensor(coordinator),
+            ReweRecallsSensor(coordinator),
+            ReweRecipeOfTheDaySensor(coordinator),
         ],
         update_before_add=False,
     )
@@ -315,6 +317,16 @@ class ReweMarketStatusSensor(
         service_flags = market_details.get("serviceFlags", {})
         location = market_details.get("location", {})
 
+        content = market_details.get("Content", {}) or {}
+        services = content.get("services", {}) or {}
+        fixed_services = [
+            s.get("text") for s in services.get("fixed", []) or [] if s.get("active")
+        ]
+        editable_services = [
+            s.get("text") for s in services.get("editable", []) or [] if s.get("active")
+        ]
+        all_services = fixed_services + editable_services
+
         return {
             CONF_MARKET_ID: self._market_id,
             "company_name": market_details.get("companyName"),
@@ -329,6 +341,135 @@ class ReweMarketStatusSensor(
             "opening_hours": market_details.get("openingInfo", []),
             "market_type": category.get("marketTypeDisplayName"),
             "has_pickup": service_flags.get("hasPickup"),
+            "services": all_services,
+            ATTR_ATTRIBUTION: ATTRIBUTION,
+        }
+
+    @property
+    def available(self) -> bool:
+        """Return True if coordinator has data."""
+        return (
+            self.coordinator.last_update_success and self.coordinator.data is not None
+        )
+
+
+class ReweRecallsSensor(CoordinatorEntity[ReweDataUpdateCoordinator], SensorEntity):
+    """Represents current active product recalls."""
+
+    _attr_icon = "mdi:alert-decagram"
+    _attr_native_unit_of_measurement = "recalls"
+    _attr_has_entity_name = True
+    _attr_name = "Product Recalls"
+
+    def __init__(self, coordinator: ReweDataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        self._market_id = coordinator.market_id
+        self._attr_unique_id = f"rewe_{self._market_id}_recalls"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, self._market_id)},
+            name=coordinator.config_entry.title,
+            manufacturer="REWE",
+            model="Market Offers",
+            entry_type=None,
+            configuration_url=coordinator.configuration_url,
+        )
+        _LOGGER.debug(
+            "Initialized ReweRecallsSensor for market %s (unique_id: %s)",
+            self._market_id,
+            self._attr_unique_id,
+        )
+
+    @property
+    def native_value(self) -> int | None:
+        """Return the number of active product recalls."""
+        if not self.coordinator.data:
+            return None
+        recalls = self.coordinator.data.get("recalls", [])
+        return len(recalls)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return list of active recalls with product details and reasons."""
+        if not self.coordinator.data:
+            return {ATTR_ATTRIBUTION: ATTRIBUTION}
+
+        recalls = self.coordinator.data.get("recalls", [])
+        formatted_recalls = []
+        for r in recalls:
+            formatted_recalls.append(
+                {
+                    "product": r.get("subjectProduct"),
+                    "reason": r.get("subjectReason"),
+                    "url": r.get("url"),
+                }
+            )
+
+        return {
+            "recalls": formatted_recalls,
+            ATTR_ATTRIBUTION: ATTRIBUTION,
+        }
+
+    @property
+    def available(self) -> bool:
+        """Return True if coordinator has data."""
+        return (
+            self.coordinator.last_update_success and self.coordinator.data is not None
+        )
+
+
+class ReweRecipeOfTheDaySensor(
+    CoordinatorEntity[ReweDataUpdateCoordinator], SensorEntity
+):
+    """Represents the REWE recipe of the day."""
+
+    _attr_icon = "mdi:silverware-fork-knife"
+    _attr_has_entity_name = True
+    _attr_name = "Recipe of the Day"
+    _attr_entity_registry_enabled_default = False
+
+    def __init__(self, coordinator: ReweDataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        self._market_id = coordinator.market_id
+        self._attr_unique_id = f"rewe_{self._market_id}_recipe_of_the_day"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, self._market_id)},
+            name=coordinator.config_entry.title,
+            manufacturer="REWE",
+            model="Market Offers",
+            entry_type=None,
+            configuration_url=coordinator.configuration_url,
+        )
+        _LOGGER.debug(
+            "Initialized ReweRecipeOfTheDaySensor for market %s (unique_id: %s)",
+            self._market_id,
+            self._attr_unique_id,
+        )
+
+    @property
+    def native_value(self) -> str | None:
+        """Return the recipe title."""
+        if not self.coordinator.data:
+            return None
+        recipe_hub = self.coordinator.data.get("recipe_hub", {})
+        recipe = recipe_hub.get("recipeOfTheDay", {})
+        return recipe.get("title")
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return recipe details."""
+        if not self.coordinator.data:
+            return {ATTR_ATTRIBUTION: ATTRIBUTION}
+
+        recipe_hub = self.coordinator.data.get("recipe_hub", {})
+        recipe = recipe_hub.get("recipeOfTheDay", {})
+
+        return {
+            "recipe_id": recipe.get("id"),
+            "detail_url": recipe.get("detailUrl"),
+            "image_url": recipe.get("imageUrl"),
+            "duration": recipe.get("duration"),
+            "difficulty_description": recipe.get("difficultyDescription"),
+            "difficulty_level": recipe.get("difficultyLevel"),
             ATTR_ATTRIBUTION: ATTRIBUTION,
         }
 
