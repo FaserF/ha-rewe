@@ -1,6 +1,9 @@
 {
   "name": "REWE Discounts",
   "hacs": "2.0.0",
+  "country": [
+    "DE"
+  ],
   "zip_release": true,
   "filename": "rewe.zip"
 }
