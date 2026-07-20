@@ -16,5 +16,5 @@ Even better: You could submit a pull request with a fix / new feature!
    developers, or if you do not have permission to do that, you may request
    the second reviewer to merge it for you.
 
-[github]: https://github.com/faserf/ha-foodsharing/issues
-[prs]: https://github.com/faserf/ha-foodsharing/pulls
+[github]: https://github.com/faserf/ha-rewe/issues
+[prs]: https://github.com/faserf/ha-rewe/pulls

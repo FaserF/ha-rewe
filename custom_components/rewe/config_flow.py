@@ -33,6 +33,41 @@ class ReweConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         """Initialize the config flow."""
         self._search_results: list[dict[str, Any]] = []
+        self._discovery_data: dict[str, Any] = {}
+
+    async def async_step_integration_discovery(
+        self, discovery_info: dict[str, Any]
+    ) -> config_entries.ConfigFlowResult:
+        """Handle a discovered REWE market (triggered by location-based auto-discovery)."""
+        market_id = str(discovery_info.get(CONF_MARKET_ID, "")).strip()
+        if not market_id:
+            return self.async_abort(reason="no_markets_found")
+
+        await self.async_set_unique_id(market_id)
+        self._abort_if_unique_id_configured()
+
+        self._discovery_data = discovery_info
+        self.context["title_placeholders"] = {
+            "name": discovery_info.get("name", "REWE Markt"),
+            "city": discovery_info.get("city", ""),
+            "street": discovery_info.get("street", ""),
+        }
+        return await self.async_step_discovery_confirm()
+
+    async def async_step_discovery_confirm(
+        self, user_input: dict | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Confirm adding the discovered market."""
+        if user_input is not None:
+            # Verify certs before creating the entry
+            if not await self.hass.async_add_executor_job(self._check_certs_valid):
+                return await self.async_step_invalid_certs()
+            name = self._discovery_data.get("name", "REWE Markt")
+            street = self._discovery_data.get("street", "")
+            title = f"REWE {name} ({street})" if street else f"REWE {name}"
+            return self.async_create_entry(title=title, data=self._discovery_data)
+
+        return self.async_show_form(step_id="discovery_confirm")
 
     def _check_certs_valid(self) -> bool:
         """Verify that mTLS certificates exist and can be parsed."""

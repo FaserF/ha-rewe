@@ -17,6 +17,10 @@
       "invalid_certs": {
         "title": "mTLS-Zertifikate fehlen oder sind ungültig",
         "description": "Die zur Authentifizierung mit der REWE-API erforderlichen Client-Zertifikate fehlen oder sind ungültig.\n\nBitte lege deine 'client.pem' und 'client.key' im Verzeichnis 'custom_components/rewe/certs/' ab, um fortzufahren.\n\nEine Anleitung zum Extrahieren dieser Zertifikate aus der REWE-App findest du in der README unter {readme_url}."
+      },
+      "discovery_confirm": {
+        "title": "REWE-Markt in der Nähe gefunden",
+        "description": "Ein REWE-Markt wurde in der Nähe deines Home Assistant Standorts gefunden:\n\n**{name}**\n{street}, {city}\n\nMöchtest du ihn hinzufügen?"
       }
     },
     "abort": {

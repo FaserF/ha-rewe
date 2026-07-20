@@ -13,6 +13,9 @@ DEFAULT_UPDATE_INTERVAL = 24  # hours
 MIN_UPDATE_INTERVAL = 1  # hours
 MAX_UPDATE_INTERVAL = 24  # hours
 
+# Auto-discovery
+DISCOVERY_RADIUS_KM = 20.0
+
 # Sensor attributes
 ATTR_DISCOUNTS = "discounts"
 ATTR_DISCOUNT_TITLE = "product"

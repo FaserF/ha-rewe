@@ -17,6 +17,10 @@
       "invalid_certs": {
         "title": "mTLS Certificates Missing or Invalid",
         "description": "The client certificates required to authenticate with the REWE API are missing or invalid.\n\nPlease place your 'client.pem' and 'client.key' in the 'custom_components/rewe/certs/' directory to proceed.\n\nFor instructions on how to extract these certificates from the REWE app, see the README at {readme_url}."
+      },
+      "discovery_confirm": {
+        "title": "REWE market found nearby",
+        "description": "A REWE market was discovered near your Home Assistant location:\n\n**{name}**\n{street}, {city}\n\nWould you like to add it?"
       }
     },
     "abort": {
