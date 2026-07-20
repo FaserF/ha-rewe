@@ -10,6 +10,7 @@ from typing import Any
 from homeassistant import config_entries, core
 from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from .const import (
@@ -23,6 +24,7 @@ from .const import (
 from .coordinator import ReweDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -63,15 +65,17 @@ async def _async_discover_markets(hass: core.HomeAssistant) -> None:
     """Search for nearby REWE markets and trigger integration discovery."""
     ha_lat = hass.config.latitude
     ha_lon = hass.config.longitude
-    location_name: str = hass.config.location_name or ""
 
     if not ha_lat or not ha_lon:
         _LOGGER.debug("REWE discovery: HA home location not set, skipping")
         return
 
-    query = location_name.strip() if location_name.strip() else ""
+    # Build search query: ZIP code is most reliable for the market API.
+    zip_code: str = getattr(hass.config, "zip_code", "") or ""
+    location_name: str = hass.config.location_name or ""
+    query = zip_code.strip() or location_name.strip()
     if not query:
-        _LOGGER.debug("REWE discovery: no location_name configured, skipping")
+        _LOGGER.debug("REWE discovery: no ZIP code or location_name configured, skipping")
         return
 
     # mTLS certificates required for REWE API

@@ -106,7 +106,7 @@ class RewePickupAvailableSensor(
 ):
     """Represents pickup availability for the local market."""
 
-    _attr_icon = "mdi:store-pickup"
+    _attr_icon = "mdi:store-check"
     _attr_has_entity_name = True
     _attr_name = "Pickup Available"
     _attr_entity_registry_enabled_default = False
