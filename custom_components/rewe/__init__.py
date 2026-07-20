@@ -75,7 +75,9 @@ async def _async_discover_markets(hass: core.HomeAssistant) -> None:
     location_name: str = hass.config.location_name or ""
     query = zip_code.strip() or location_name.strip()
     if not query:
-        _LOGGER.debug("REWE discovery: no ZIP code or location_name configured, skipping")
+        _LOGGER.debug(
+            "REWE discovery: no ZIP code or location_name configured, skipping"
+        )
         return
 
     # mTLS certificates required for REWE API
