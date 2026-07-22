@@ -249,8 +249,9 @@ async def test_coordinator_cookie_persistence(hass: HomeAssistant) -> None:
         assert entry.data.get("cookies") == {"old_session": "123", "new_session": "456"}
 
 
-async def test_coordinator_is_data_valid(hass: HomeAssistant) -> None:
+async def test_coordinator_is_data_valid(hass: HomeAssistant, freezer) -> None:
     """Test coordinator is_data_valid property behavior."""
+    freezer.move_to("2026-07-22 12:00:00")
     entry = MockConfigEntry(
         domain=DOMAIN,
         data={CONF_MARKET_ID: "440421"},
