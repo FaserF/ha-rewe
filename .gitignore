@@ -67,3 +67,4 @@ custom_components/rewe/certs/
 rewe.apk
 scratch/
 temp_certs/
+*.apk

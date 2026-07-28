@@ -27,13 +27,17 @@ def extract_certs_from_zip(z, out_pem_path, out_key_path):
     p12_files = []
     pem_files = []
 
-    for name in z.namelist():
-        if name.endswith((".p12", ".pfx")):
-            print(f"Found PKCS12 file: {name}")
+    file_list = z.namelist()
+    print(f"Total files in APK zip: {len(file_list)}")
+
+    for name in file_list:
+        name_lower = name.lower()
+        if name_lower.endswith((".p12", ".pfx", ".bks", ".jks", ".keystore")):
+            print(f"Found potential certificate/keystore file: {name}")
             p12_files.append((name, z.read(name)))
-        elif "cert" in name.lower() or "key" in name.lower() or "mtls" in name.lower():
-            if name.endswith((".pem", ".key", ".crt")):
-                print(f"Found potential PEM/CRT file: {name}")
+        elif "cert" in name_lower or "key" in name_lower or "mtls" in name_lower or "rewe" in name_lower:
+            if name_lower.endswith((".pem", ".key", ".crt", ".der", ".dat")):
+                print(f"Found potential PEM/CRT asset: {name}")
                 pem_files.append((name, z.read(name)))
 
     # Handle PKCS12 files first
@@ -113,16 +117,20 @@ def extract_certs_from_apk(apk_path, out_dir):
     import io
 
     with zipfile.ZipFile(apk_path, "r") as z:
-        # Check if this is an APK Bundle (contains base.apk)
-        if "base.apk" in z.namelist():
-            print("Detected APKM / Split APK bundle. Opening base.apk...")
-            base_data = z.read("base.apk")
-            with zipfile.ZipFile(io.BytesIO(base_data)) as base_zip:
-                if extract_certs_from_zip(base_zip, out_pem_path, out_key_path):
-                    return True
-        else:
-            if extract_certs_from_zip(z, out_pem_path, out_key_path):
-                return True
+        # 1. Try extracting directly from top-level zip
+        if extract_certs_from_zip(z, out_pem_path, out_key_path):
+            return True
+
+        # 2. If top-level search failed, check for nested split APKs (XAPK / APKM / APKS)
+        apk_entries = [name for name in z.namelist() if name.endswith(".apk")]
+        if apk_entries:
+            print(f"Detected APK bundle / XAPK containing split APKs: {apk_entries}")
+            for apk_entry in apk_entries:
+                print(f"Checking nested APK: {apk_entry}...")
+                sub_data = z.read(apk_entry)
+                with zipfile.ZipFile(io.BytesIO(sub_data)) as sub_zip:
+                    if extract_certs_from_zip(sub_zip, out_pem_path, out_key_path):
+                        return True
 
     print("Could not find or decode any certificates from APK.")
     return False
