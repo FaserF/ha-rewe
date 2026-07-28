@@ -91,7 +91,7 @@ async def _async_discover_markets(hass: core.HomeAssistant) -> None:
         _LOGGER.debug("REWE discovery: mTLS certs missing, skipping auto-discovery")
         return
 
-    _LOGGER.debug("REWE discovery: searching markets for '%s'", query)
+    _LOGGER.debug("REWE discovery: searching markets")
 
     from .api import ReweAPIClient
 
