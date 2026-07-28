@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3  # noqa: EXE001
 """Generates a structured, deduplicated, user-friendly changelog from git commit history."""
 
 import argparse

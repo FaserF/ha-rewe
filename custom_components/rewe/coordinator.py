@@ -330,24 +330,25 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
             )
 
             # Raise a HA Repair issue if we haven't succeeded in 24 h
-            if self._last_success and (dt_util.now() - self._last_success) > timedelta(
-                hours=24
+            if (
+                self._last_success
+                and (dt_util.now() - self._last_success) > timedelta(hours=24)
+                and not self._issue_created
             ):
-                if not self._issue_created:
-                    _LOGGER.warning(
-                        "REWE market %s: creating connection repair issue as no updates succeeded in 24 hours",
-                        self.market_id,
-                    )
-                    ir.async_create_issue(
-                        self.hass,
-                        DOMAIN,
-                        ISSUE_ID_CONNECTION,
-                        is_fixable=False,
-                        severity=ir.IssueSeverity.WARNING,
-                        translation_key="connection_error",
-                        learn_more_url="https://github.com/FaserF/ha-rewe/issues",
-                    )
-                    self._issue_created = True
+                _LOGGER.warning(
+                    "REWE market %s: creating connection repair issue as no updates succeeded in 24 hours",
+                    self.market_id,
+                )
+                ir.async_create_issue(
+                    self.hass,
+                    DOMAIN,
+                    ISSUE_ID_CONNECTION,
+                    is_fixable=False,
+                    severity=ir.IssueSeverity.WARNING,
+                    translation_key="connection_error",
+                    learn_more_url="https://github.com/FaserF/ha-rewe/issues",
+                )
+                self._issue_created = True
 
             # Exponential backoff on rate-limit / blocked responses
             status = getattr(err, "status", None)

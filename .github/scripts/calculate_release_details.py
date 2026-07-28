@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3  # noqa: EXE001
 import glob
 import json
 import os
@@ -253,7 +253,7 @@ def main():
         f"> **Affected areas:** {impact_str}\n"
     )
 
-    released_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M") + " UTC"
+    released_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M") + " UTC"
     body_parts = [
         f"# {friendly_name} {version}  {channel_badge}",
         "",
