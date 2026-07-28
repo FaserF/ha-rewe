@@ -35,7 +35,12 @@ def extract_certs_from_zip(z, out_pem_path, out_key_path):
         if name_lower.endswith((".p12", ".pfx", ".bks", ".jks", ".keystore")):
             print(f"Found potential certificate/keystore file: {name}")
             p12_files.append((name, z.read(name)))
-        elif "cert" in name_lower or "key" in name_lower or "mtls" in name_lower or "rewe" in name_lower:
+        elif (
+            "cert" in name_lower
+            or "key" in name_lower
+            or "mtls" in name_lower
+            or "rewe" in name_lower
+        ):
             if name_lower.endswith((".pem", ".key", ".crt", ".der", ".dat")):
                 print(f"Found potential PEM/CRT asset: {name}")
                 pem_files.append((name, z.read(name)))
