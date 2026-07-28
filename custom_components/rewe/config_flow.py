@@ -99,7 +99,7 @@ class ReweConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             load_pem_private_key(key_bytes, password=None)
             _LOGGER.debug("mTLS certificates are valid and successfully loaded.")
             return True
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             _LOGGER.error("REWE certificate validation failed: %s", exc)
             return False
 
@@ -156,7 +156,7 @@ class ReweConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     self._search_results = results
                     return await self.async_step_select_market()
 
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 _LOGGER.error("REWE market search error: %s", exc)
                 errors["base"] = "search_failed"
 

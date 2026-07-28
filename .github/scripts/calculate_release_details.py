@@ -4,7 +4,7 @@ import json
 import os
 import re
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 def run_git(args):
@@ -149,7 +149,7 @@ def main():
                 .decode("utf-8")
                 .strip()
             )
-        except Exception:
+        except Exception:  # noqa: BLE001
             changelog_md = (
                 "_Changelog could not be generated automatically. See commit history._"
             )
@@ -187,7 +187,7 @@ def main():
             integration_count += 1
         elif f.startswith("tests/"):
             test_count += 1
-        elif f.startswith(".github/") or f.startswith("scripts/"):
+        elif f.startswith((".github/", "scripts/")):
             ci_count += 1
         elif f.startswith("docs/") or f.endswith(".md"):
             docs_count += 1

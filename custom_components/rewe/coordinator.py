@@ -406,7 +406,7 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
             # Fetch market details (opening hours, address, name)
             try:
                 market_details = client.get_market_details(self.market_id)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 _LOGGER.warning(
                     "Could not fetch market details for market %s: %s",
                     self.market_id,
@@ -421,7 +421,7 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
             # Fetch active recalls
             try:
                 recalls = client.get_recalls()
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 _LOGGER.warning("Could not fetch REWE recalls: %s", e)
                 recalls = []
 
@@ -430,13 +430,13 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
             if zip_code:
                 try:
                     service_portfolio = client.get_service_portfolio(str(zip_code))
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     _LOGGER.warning("Could not fetch service portfolio: %s", e)
 
             # Fetch recipe of the day
             try:
                 recipe_hub = client.get_recipe_hub()
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 _LOGGER.warning("Could not fetch recipe hub: %s", e)
                 recipe_hub = {}
 
@@ -489,7 +489,7 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
                     )
 
                 self.hass.add_job(_create_issue)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 _LOGGER.error(
                     "Failed to create missing certificate repair issue: %s", e
                 )
@@ -565,14 +565,14 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
         if isinstance(value, (int, float)):
             try:
                 return time.strftime("%Y-%m-%d", time.localtime(value / 1000))
-            except Exception:
+            except Exception:  # noqa: BLE001
                 return None
         if isinstance(value, str):
             if "-" in value:
                 return value.split("T")[0]
             try:
                 return time.strftime("%Y-%m-%d", time.localtime(int(value) / 1000))
-            except Exception:
+            except Exception:  # noqa: BLE001
                 return None
         return None
 
@@ -648,6 +648,6 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
                         entry["loyalty_bonus_type"] = loyalty_type
 
                     discounts.append(entry)
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     _LOGGER.debug("Skipping malformed offer item: %s – %s", item, exc)
         return discounts

@@ -27,11 +27,11 @@ def extract_certs_from_zip(z, out_pem_path, out_key_path):
     pem_files = []
 
     for name in z.namelist():
-        if name.endswith(".p12") or name.endswith(".pfx"):
+        if name.endswith((".p12", ".pfx")):
             print(f"Found PKCS12 file: {name}")
             p12_files.append((name, z.read(name)))
         elif "cert" in name.lower() or "key" in name.lower() or "mtls" in name.lower():
-            if name.endswith(".pem") or name.endswith(".key") or name.endswith(".crt"):
+            if name.endswith((".pem", ".key", ".crt")):
                 print(f"Found potential PEM/CRT file: {name}")
                 pem_files.append((name, z.read(name)))
 
@@ -41,7 +41,7 @@ def extract_certs_from_zip(z, out_pem_path, out_key_path):
             # Try to decode with common passwords
             for pw in PKCS12_PASSWORDS:
                 try:
-                    private_key, certificate, additional_certificates = (
+                    private_key, certificate, _additional_certificates = (
                         pkcs12.load_key_and_certificates(data, pw)
                     )
                     print(f"Successfully decoded {name}")
@@ -67,7 +67,7 @@ def extract_certs_from_zip(z, out_pem_path, out_key_path):
                         f"Written certificate to {out_pem_path} and key to {out_key_path}"
                     )
                     return True
-                except Exception:
+                except Exception:  # noqa: BLE001, S112
                     continue
 
     # If no PKCS12 or decryption failed, look at PEM files

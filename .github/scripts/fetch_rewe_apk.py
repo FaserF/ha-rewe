@@ -50,7 +50,7 @@ def main():
             else:
                 print(f"Failed to download from {url}: HTTP Status {r.status_code}")
                 last_error = f"HTTP Status {r.status_code}"
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Error fetching from {url}: {e}")
             last_error = e
 

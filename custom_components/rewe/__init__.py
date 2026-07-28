@@ -100,7 +100,7 @@ async def _async_discover_markets(hass: core.HomeAssistant) -> None:
         markets: list[dict[str, Any]] = await hass.async_add_executor_job(
             client.market_search, query
         )
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         _LOGGER.debug("REWE discovery: API error during search: %s", exc)
         return
 
