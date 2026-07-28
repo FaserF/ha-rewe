@@ -99,6 +99,15 @@ def extract_certs_from_apk(apk_path, out_dir):
     out_pem_path = os.path.join(out_dir, "client.pem")
     out_key_path = os.path.join(out_dir, "client.key")
 
+    # Clean pre-existing certificates in output folder if they exist
+    for p in (out_pem_path, out_key_path):
+        if os.path.exists(p):
+            try:
+                os.remove(p)
+                print(f"Removed pre-existing certificate file: {p}")
+            except OSError as e:
+                print(f"Warning: could not remove {p}: {e}")
+
     print(f"Extracting assets from APK: {apk_path}")
 
     import io
