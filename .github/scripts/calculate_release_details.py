@@ -1,4 +1,3 @@
-#!/usr/bin/env python3  # noqa: EXE001
 import glob
 import json
 import os
