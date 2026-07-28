@@ -2,6 +2,7 @@
 
 import sys
 import types
+
 import pytest
 
 # Mock fcntl module for Windows compatibility during Home Assistant test initialization

@@ -215,10 +215,21 @@ def clean_and_update_template(file_path, integration_version, ha_version, repo_n
 
         if "description:" in line:
             desc_lower = line.lower()
-            if any(
-                k in desc_lower
-                for k in ["domain", "host", "ip address", "url", "instance", "address"]
-            ) and "not share" not in desc_lower and "private" not in desc_lower:
+            if (
+                any(
+                    k in desc_lower
+                    for k in [
+                        "domain",
+                        "host",
+                        "ip address",
+                        "url",
+                        "instance",
+                        "address",
+                    ]
+                )
+                and "not share" not in desc_lower
+                and "private" not in desc_lower
+            ):
                 line = (
                     line.rstrip()
                     + " (Do NOT share sensitive passwords, credentials, or public API keys. Use example.com or 192.168.1.1 instead.)"

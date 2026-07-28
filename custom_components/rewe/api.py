@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any
+
 from curl_cffi import requests
 
 _LOGGER = logging.getLogger(__name__)

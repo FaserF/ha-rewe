@@ -10,6 +10,7 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 
+from .api import ReweAPIClient
 from .const import (
     CERT_RELATIVE_PATH,
     CONF_MARKET_ID,
@@ -20,7 +21,6 @@ from .const import (
     MAX_UPDATE_INTERVAL,
     MIN_UPDATE_INTERVAL,
 )
-from .api import ReweAPIClient
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -86,10 +86,10 @@ class ReweConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return False
 
         try:
-            from cryptography.x509 import load_pem_x509_certificate
             from cryptography.hazmat.primitives.serialization import (
                 load_pem_private_key,
             )
+            from cryptography.x509 import load_pem_x509_certificate
 
             cert_bytes = cert_path.read_bytes()
             key_bytes = key_path.read_bytes()

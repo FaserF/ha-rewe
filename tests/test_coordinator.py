@@ -2,13 +2,15 @@
 
 from datetime import timedelta
 from unittest.mock import MagicMock, patch
+
 import pytest
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from custom_components.rewe.const import CONF_MARKET_ID, DOMAIN
 from custom_components.rewe.coordinator import ReweDataUpdateCoordinator
-from custom_components.rewe.const import DOMAIN, CONF_MARKET_ID
 
 pytestmark = pytest.mark.usefixtures("enable_custom_integrations")
 

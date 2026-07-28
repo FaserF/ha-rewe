@@ -5,16 +5,16 @@ from unittest.mock import MagicMock
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.rewe.const import DOMAIN, CONF_MARKET_ID
+from custom_components.rewe.const import CONF_MARKET_ID, DOMAIN
 from custom_components.rewe.sensor import (
-    async_setup_entry,
-    ReweSensor,
-    ReweNextSensor,
     ReweBonusSensor,
-    ReweNextBonusSensor,
     ReweMarketStatusSensor,
+    ReweNextBonusSensor,
+    ReweNextSensor,
     ReweRecallsSensor,
     ReweRecipeOfTheDaySensor,
+    ReweSensor,
+    async_setup_entry,
 )
 
 

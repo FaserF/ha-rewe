@@ -2,8 +2,9 @@
 Script to fetch the latest REWE APK from APKPure.
 """
 
-import sys
 import os
+import sys
+
 from curl_cffi import requests
 
 headers = {

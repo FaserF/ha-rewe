@@ -3,11 +3,12 @@ Script to extract mTLS certificates from REWE APK.
 Extracts PKCS#12, PEM or keystore assets and outputs certs/client.pem and certs/client.key.
 """
 
-import sys
 import os
+import sys
 import zipfile
-from cryptography.hazmat.primitives.serialization import pkcs12
+
 from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.serialization import pkcs12
 
 # PKCS12 password usually used in the APK (if standard / hardcoded in the app)
 PKCS12_PASSWORDS = [

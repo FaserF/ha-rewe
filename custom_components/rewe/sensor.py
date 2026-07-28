@@ -5,18 +5,17 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from homeassistant import config_entries
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.const import ATTR_ATTRIBUTION
-from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from homeassistant.helpers.device_registry import DeviceInfo
-
 from .const import (
-    ATTRIBUTION,
     ATTR_DISCOUNTS,
     ATTR_VALID_DATE,
+    ATTRIBUTION,
     CONF_MARKET_ID,
     DOMAIN,
 )

@@ -1,10 +1,12 @@
 """Test the REWE Discounts config flow."""
 
 from unittest.mock import MagicMock, patch
+
 import pytest
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
-from custom_components.rewe.const import DOMAIN, CONF_MARKET_ID
+
+from custom_components.rewe.const import CONF_MARKET_ID, DOMAIN
 
 pytestmark = pytest.mark.usefixtures("enable_custom_integrations")
 

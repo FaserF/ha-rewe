@@ -1,23 +1,21 @@
 """Test the certificate extraction script."""
 
-import os
-import zipfile
-import io
-from cryptography.hazmat.primitives.serialization import pkcs12
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography import x509
-from cryptography.x509.oid import NameOID
 import datetime
-
+import io
+import os
 import sys
+import zipfile
 from pathlib import Path
 
+from cryptography import x509
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.serialization import pkcs12
+from cryptography.x509.oid import NameOID
+
 sys.path.append(str(Path(__file__).parent.parent / ".github" / "scripts"))
-from extract_rewe_certs import extract_certs_from_zip
-
-
 from cryptography.hazmat.primitives.hashes import SHA256
+from extract_rewe_certs import extract_certs_from_zip
 
 
 def generate_mock_pfx(password: bytes) -> bytes:

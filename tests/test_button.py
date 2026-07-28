@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, MagicMock
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.rewe.const import DOMAIN, CONF_MARKET_ID
-from custom_components.rewe.button import async_setup_entry, ReweForceUpdateButton
+from custom_components.rewe.button import ReweForceUpdateButton, async_setup_entry
+from custom_components.rewe.const import CONF_MARKET_ID, DOMAIN
 
 
 def _make_coordinator(entry: MockConfigEntry) -> MagicMock:

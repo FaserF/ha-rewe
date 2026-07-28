@@ -26,10 +26,12 @@ from typing import Any
 
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import issue_registry as ir, storage
+from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers import storage
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
+from .api import ReweAPIClient
 from .const import (
     ATTR_BASE_PRICE,
     ATTR_CATEGORY,
@@ -47,7 +49,6 @@ from .const import (
     KEY_RELATIVE_PATH,
     MIN_UPDATE_INTERVAL,
 )
-from .api import ReweAPIClient
 
 _LOGGER = logging.getLogger(__name__)
 

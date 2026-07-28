@@ -3,9 +3,9 @@
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.rewe.const import DOMAIN, CONF_MARKET_ID
-from custom_components.rewe.diagnostics import async_get_config_entry_diagnostics
+from custom_components.rewe.const import CONF_MARKET_ID, DOMAIN
 from custom_components.rewe.coordinator import ReweDataUpdateCoordinator
+from custom_components.rewe.diagnostics import async_get_config_entry_diagnostics
 
 
 async def test_diagnostics(hass: HomeAssistant) -> None:
