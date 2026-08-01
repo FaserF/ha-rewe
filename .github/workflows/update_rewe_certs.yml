@@ -31,6 +31,9 @@ jobs:
 
       - name: Extract and Compare Certificates
         id: cert_check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
         run: |
           mkdir -p temp_certs
           if python .github/scripts/extract_rewe_certs.py rewe.apk temp_certs; then
@@ -40,10 +43,14 @@ jobs:
             NEW_HASH=$(sha256sum temp_certs/client.pem | cut -d' ' -f1)
             echo "New cert hash: $NEW_HASH"
             
-            # Read old hash from existing client.pem if present
+            # Download latest release zip and check client.pem hash
             OLD_HASH=""
-            if [ -f custom_components/rewe/certs/client.pem ]; then
-              OLD_HASH=$(sha256sum custom_components/rewe/certs/client.pem | cut -d' ' -f1)
+            mkdir -p latest_release
+            if gh release download --repo "$REPO" --pattern "rewe.zip" --dir latest_release --clobber 2>/dev/null; then
+              unzip -q latest_release/rewe.zip -d latest_release/extracted 2>/dev/null || true
+              if [ -f latest_release/extracted/certs/client.pem ]; then
+                OLD_HASH=$(sha256sum latest_release/extracted/certs/client.pem | cut -d' ' -f1)
+              fi
             fi
             echo "Old cert hash: $OLD_HASH"
             
@@ -64,5 +71,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh workflow run release.yml --ref main -f release_type=stable -f bump_level=patch
+          gh workflow run release.yml --ref main -f release_type=stable
 
