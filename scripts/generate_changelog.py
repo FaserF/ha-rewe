@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Generates a structured, deduplicated, user-friendly changelog from git commit history."""
 
 import argparse
