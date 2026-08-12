@@ -40,7 +40,8 @@
       "init": {
         "title": "REWE wöchentliche Angebote konfigurieren",
         "data": {
-          "update_interval": "Aktualisierungsintervall (Stunden, mindestens 1, maximal 24)"
+          "update_interval": "Aktualisierungsintervall (Stunden, mindestens 1, maximal 24)",
+          "card_number": "REWE Bonus Kartennummer"
         }
       }
     }

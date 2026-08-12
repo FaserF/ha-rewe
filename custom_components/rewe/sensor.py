@@ -302,7 +302,13 @@ class ReweMarketStatusSensor(
         if not market_details:
             return None
         opening_status = market_details.get("openingStatus", {})
-        return opening_status.get("statusText")
+        open_state = opening_status.get("openState")
+        status_text = opening_status.get("statusText")
+        if open_state == "OPEN":
+            return status_text or "Geöffnet"
+        if open_state == "CLOSED":
+            return status_text or "Geschlossen"
+        return status_text
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -316,7 +322,7 @@ class ReweMarketStatusSensor(
         service_flags = market_details.get("serviceFlags", {})
         location = market_details.get("location", {})
 
-        content = market_details.get("Content", {}) or {}
+        content = market_details.get("content", {}) or {}
         services = content.get("services", {}) or {}
         fixed_services = [
             s.get("text") for s in services.get("fixed", []) or [] if s.get("active")
@@ -474,7 +480,9 @@ class ReweRecipeOfTheDaySensor(
 
     @property
     def available(self) -> bool:
-        """Return True if coordinator has data."""
-        return (
-            self.coordinator.last_update_success or self.coordinator.is_data_valid
-        ) and self.coordinator.data is not None
+        """Return True if coordinator has recipe data."""
+        if not self.coordinator.data or not self.coordinator.last_update_success:
+            return False
+        recipe_hub = self.coordinator.data.get("recipe_hub", {})
+        recipe = recipe_hub.get("recipeOfTheDay", {})
+        return bool(recipe.get("title"))

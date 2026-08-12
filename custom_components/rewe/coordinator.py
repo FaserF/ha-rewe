@@ -40,6 +40,7 @@ from .const import (
     ATTR_PICTURE,
     ATTR_VALID_DATE,
     CERT_RELATIVE_PATH,
+    CONF_CARD_NUMBER,
     CONF_MARKET_ID,
     CONF_UPDATE_INTERVAL,
     DEFAULT_UPDATE_INTERVAL,
@@ -71,7 +72,11 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
     def __init__(self, hass: HomeAssistant, entry: config_entries.ConfigEntry) -> None:
         config = {**entry.data, **entry.options}
         self.market_id: str = config[CONF_MARKET_ID]
+        self.card_number: str | None = config.get(CONF_CARD_NUMBER)
         self.config_entry = entry
+
+        self.account_key = "account_de"
+        self.account_configuration_url = "https://www.rewe.de/service/rewe-bonus/"
 
         # Anti-ban state
         self._backoff_until: datetime | None = None

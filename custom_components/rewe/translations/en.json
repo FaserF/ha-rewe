@@ -40,7 +40,8 @@
       "init": {
         "title": "Configure REWE weekly offers",
         "data": {
-          "update_interval": "Update Interval (hours, min 1, max 24)"
+          "update_interval": "Update Interval (hours, min 1, max 24)",
+          "card_number": "REWE Bonus Card Barcode Number"
         }
       }
     }

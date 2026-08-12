@@ -2,11 +2,12 @@
 
 DOMAIN = "rewe"
 ATTRIBUTION = "Data provided by REWE mobile API"
-PLATFORMS = ["sensor", "button", "binary_sensor"]
+PLATFORMS = ["sensor", "button", "binary_sensor", "image"]
 
 # Configuration keys
 CONF_MARKET_ID = "market_id"
 CONF_UPDATE_INTERVAL = "update_interval"
+CONF_CARD_NUMBER = "card_number"
 
 # Defaults
 DEFAULT_UPDATE_INTERVAL = 24  # hours

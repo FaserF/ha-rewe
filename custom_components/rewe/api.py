@@ -183,7 +183,7 @@ class ReweAPIClient:
     def get_recipe_hub(self) -> dict[str, Any]:
         """Fetch recipe hub/recipe of the day."""
         _LOGGER.debug("Fetching recipe hub")
-        url = "https://mobile-api.rewe.de/api/v3/recipe-hub"
+        url = "https://mobile-clients-api.rewe.de/api/v3/recipe-hub"
         data = self._request(url)
 
         if isinstance(data, dict):

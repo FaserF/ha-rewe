@@ -30,6 +30,10 @@ It groups all sensors under a single market device and implements advanced lock-
 - **⭐ REWE Bonus Point Tracking**:
   - **REWE Bonus**: Displays the count of items in the current week that yield loyalty points/cashback. Attributes list detailed bonus values and types (e.g. points/cents).
   - **REWE Bonus Preview**: Upcoming deals next week that will yield bonus points.
+- **📸 REWE Loyalty Card QR Code Entity (`image`)**:
+  - A dynamic 400x400 PNG QR Code entity rendering your REWE Bonus barcode number for scanning directly at the checkout.
+- **📱 Dedicated REWE Account Device**:
+  - Grouped under a dedicated **REWE Account (DE)** device with direct link to your REWE Bonus web portal.
 
 > [!NOTE]
 > **Offers Preview** and **REWE Bonus Preview** show `0` items during the week (Sunday through Friday) and only populate starting on **Saturdays**, because REWE publishes next week's offers and bonus discounts only on Saturdays.
