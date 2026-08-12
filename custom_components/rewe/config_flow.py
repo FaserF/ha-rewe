@@ -383,9 +383,9 @@ class ReweOptionsFlowHandler(config_entries.OptionsFlow):
             schema_dict[vol.Optional(CONF_CARD_NUMBER, default=current_card_number)] = (
                 str
             )
-            schema_dict[vol.Optional(CONF_REFRESH_TOKEN, default=current_user_token)] = (
-                str
-            )
+            schema_dict[
+                vol.Optional(CONF_REFRESH_TOKEN, default=current_user_token)
+            ] = str
             schema_dict[
                 vol.Optional(CONF_AUTO_ACTIVATE_COUPONS, default=current_auto_activate)
             ] = bool
