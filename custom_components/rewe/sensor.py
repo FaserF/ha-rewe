@@ -42,6 +42,7 @@ async def async_setup_entry(
             ReweNextBonusSensor(coordinator),
             ReweMarketStatusSensor(coordinator),
             ReweRecallsSensor(coordinator),
+            ReweRecipeOfTheDaySensor(coordinator),
         ],
         update_before_add=False,
     )
