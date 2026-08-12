@@ -12,6 +12,8 @@ from custom_components.rewe.const import CONF_MARKET_ID, DOMAIN
 def _make_coordinator(entry: MockConfigEntry) -> MagicMock:
     coordinator = MagicMock()
     coordinator.market_id = "440421"
+    coordinator.user_token = None
+    coordinator.account_key = "account_de"
     coordinator.config_entry = entry
     coordinator._force_update = False
     coordinator.configuration_url = (

@@ -12,7 +12,6 @@ from custom_components.rewe.sensor import (
     ReweNextBonusSensor,
     ReweNextSensor,
     ReweRecallsSensor,
-    ReweRecipeOfTheDaySensor,
     ReweSensor,
     async_setup_entry,
 )
@@ -21,6 +20,8 @@ from custom_components.rewe.sensor import (
 def _make_coordinator(hass: HomeAssistant, entry: MockConfigEntry) -> MagicMock:
     coordinator = MagicMock()
     coordinator.market_id = "440421"
+    coordinator.user_token = None
+    coordinator.account_key = "account_de"
     coordinator.config_entry = entry
     coordinator.last_update_success = True
     coordinator.configuration_url = (
@@ -92,7 +93,7 @@ def _make_coordinator(hass: HomeAssistant, entry: MockConfigEntry) -> MagicMock:
 
 
 async def test_sensors_setup(hass: HomeAssistant) -> None:
-    """Test that seven sensors are registered."""
+    """Test that six sensors are registered."""
     entry = MockConfigEntry(domain=DOMAIN, data={CONF_MARKET_ID: "440421"}, options={})
     entry.add_to_hass(hass)
 
@@ -104,7 +105,7 @@ async def test_sensors_setup(hass: HomeAssistant) -> None:
 
     assert async_add_entities.called
     entities = async_add_entities.call_args[0][0]
-    assert len(entities) == 7
+    assert len(entities) == 6
     types = {type(e) for e in entities}
     assert types == {
         ReweSensor,
@@ -113,7 +114,6 @@ async def test_sensors_setup(hass: HomeAssistant) -> None:
         ReweNextBonusSensor,
         ReweMarketStatusSensor,
         ReweRecallsSensor,
-        ReweRecipeOfTheDaySensor,
     }
 
 
@@ -246,22 +246,3 @@ async def test_recalls_sensor(hass: HomeAssistant) -> None:
         == 'Vorsorglicher Produktrückruf "Raffelberger Mineralbrunnen"'
     )
     assert attrs["recalls"][0]["reason"] == "bakterielle Verunreinigung"
-
-
-async def test_recipe_sensor(hass: HomeAssistant) -> None:
-    """Test recipe of the day sensor values and attributes."""
-    entry = MockConfigEntry(domain=DOMAIN, data={CONF_MARKET_ID: "440421"}, options={})
-    entry.add_to_hass(hass)
-
-    coordinator = _make_coordinator(hass, entry)
-    hass.data[DOMAIN] = {entry.entry_id: coordinator}
-
-    sensor = ReweRecipeOfTheDaySensor(coordinator)
-    assert sensor.native_value == "Zucchinigemüse mit Lachs"
-    attrs = sensor.extra_state_attributes
-    assert attrs["recipe_id"] == "9e6418b8-b1ef-4d49-8de5-9d09ffda6028"
-    assert attrs["detail_url"] == "https://www.rewe.de/rezepte/zucchinigemuese/"
-    assert attrs["image_url"] == "https://c.rewe-static.de/31191263/10/31191263.png"
-    assert attrs["duration"] == "35 min"
-    assert attrs["difficulty_description"] == "Einfach"
-    assert attrs["difficulty_level"] == 1
