@@ -46,7 +46,7 @@ async def async_setup_entry(
         update_before_add=False,
     )
 
-    if coordinator.user_token:
+    if coordinator.user_token and coordinator.user_token.strip():
         created_account_entities = hass.data[DOMAIN].setdefault(
             "_created_account_entities", set()
         )
@@ -444,7 +444,6 @@ class ReweRecipeOfTheDaySensor(
     _attr_icon = "mdi:silverware-fork-knife"
     _attr_has_entity_name = True
     _attr_name = "Recipe of the Day"
-    _attr_entity_registry_enabled_default = False
 
     def __init__(self, coordinator: ReweDataUpdateCoordinator) -> None:
         super().__init__(coordinator)
@@ -471,7 +470,7 @@ class ReweRecipeOfTheDaySensor(
             return None
         recipe_hub = self.coordinator.data.get("recipe_hub", {})
         recipe = recipe_hub.get("recipeOfTheDay", {})
-        return recipe.get("title")
+        return recipe.get("title") or "Kein Rezept verfügbar"
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -494,12 +493,8 @@ class ReweRecipeOfTheDaySensor(
 
     @property
     def available(self) -> bool:
-        """Return True if coordinator has recipe data."""
-        if not self.coordinator.data or not self.coordinator.last_update_success:
-            return False
-        recipe_hub = self.coordinator.data.get("recipe_hub", {})
-        recipe = recipe_hub.get("recipeOfTheDay", {})
-        return bool(recipe.get("title"))
+        """Return True if coordinator has data (recipe may be empty but sensor is available)."""
+        return self.coordinator.data is not None
 
 
 class ReweActivatedCouponsSensor(
@@ -548,11 +543,7 @@ class ReweActivatedCouponsSensor(
 
     @property
     def available(self) -> bool:
-        return (
-            self.coordinator.data is not None
-            and "coupons" in self.coordinator.data
-            and bool(self.coordinator.user_token)
-        )
+        return self.coordinator.data is not None and bool(self.coordinator.user_token)
 
 
 class ReweAvailableCouponsSensor(
@@ -601,11 +592,7 @@ class ReweAvailableCouponsSensor(
 
     @property
     def available(self) -> bool:
-        return (
-            self.coordinator.data is not None
-            and "coupons" in self.coordinator.data
-            and bool(self.coordinator.user_token)
-        )
+        return self.coordinator.data is not None and bool(self.coordinator.user_token)
 
 
 class ReweLastReceiptSensor(CoordinatorEntity[ReweDataUpdateCoordinator], SensorEntity):
@@ -633,10 +620,12 @@ class ReweLastReceiptSensor(CoordinatorEntity[ReweDataUpdateCoordinator], Sensor
             return None
         receipt = self.coordinator.data.get("last_receipt")
         if not receipt:
-            return None
+            return "Keine Kassenbons"
         total = receipt.get("total")
         currency = receipt.get("currency", "EUR")
-        return f"{total} {currency}".strip() if total is not None else None
+        return (
+            f"{total} {currency}".strip() if total is not None else "Keine Kassenbons"
+        )
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -653,8 +642,4 @@ class ReweLastReceiptSensor(CoordinatorEntity[ReweDataUpdateCoordinator], Sensor
 
     @property
     def available(self) -> bool:
-        return (
-            self.coordinator.data is not None
-            and "last_receipt" in self.coordinator.data
-            and bool(self.coordinator.user_token)
-        )
+        return self.coordinator.data is not None and bool(self.coordinator.user_token)

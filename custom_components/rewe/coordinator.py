@@ -461,6 +461,8 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
         parsed["recalls"] = recalls
         parsed["service_portfolio"] = service_portfolio
         parsed["recipe_hub"] = recipe_hub
+        parsed.setdefault("coupons", [])
+        parsed.setdefault("last_receipt", {})
         cookies = client.cookies if isinstance(client.cookies, dict) else {}
         return parsed, cookies
 

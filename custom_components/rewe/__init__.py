@@ -11,6 +11,7 @@ from homeassistant import config_entries, core
 from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from .const import (
@@ -206,6 +207,19 @@ async def async_setup_entry(
     entry.async_on_unload(entry.add_update_listener(_async_update_options))
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    # Remove orphaned account device when token was cleared (logout)
+    if not coordinator.user_token or not coordinator.user_token.strip():
+        dev_reg = dr.async_get(hass)
+        account_device = dev_reg.async_get_device(
+            identifiers={(DOMAIN, coordinator.account_key)}
+        )
+        if account_device:
+            dev_reg.async_remove_device(account_device.id)
+            _LOGGER.debug(
+                "REWE: removed orphaned account device for market %s",
+                coordinator.market_id,
+            )
 
     domain_data = hass.data[DOMAIN]
     if not domain_data.get("_discovery_scheduled"):

@@ -35,6 +35,10 @@ It groups all sensors under a single market device and implements advanced lock-
 - **📱 Dedicated REWE Account Device**:
   - Grouped under a dedicated **REWE Account (DE)** device with direct link to your REWE Bonus web portal.
 
+> [!WARNING]
+> **eBons (receipts) and Coupons are currently NOT supported.**
+> REWE's personal data endpoints (`/api/v1/ebons`, `/api/v1/coupons`) require a proprietary OAuth2 token issued exclusively by the official REWE iOS/Android app — the web session cookie (`rstp`) does **not** grant access to these endpoints. Until a compatible token exchange is discovered, those sensors will always show `0 items` / `Keine Kassenbons`.
+
 > [!NOTE]
 > **Offers Preview** and **REWE Bonus Preview** show `0` items during the week (Sunday through Friday) and only populate starting on **Saturdays**, because REWE publishes next week's offers and bonus discounts only on Saturdays.
 
@@ -97,16 +101,63 @@ This integration is fully compatible with [HACS](https://hacs.xyz/).
 4. Select your specific market from the dropdown list.
 5. Submit to create the device and entities.
 
+## 🔐 REWE Bonus & Account Login *(optional)*
+
+Connecting your REWE customer account currently enables **one** additional feature:
+
+- **📸 REWE Bonus Loyalty Card QR Code**: Displays a live, scannable QR Code entity on your Home Assistant dashboard for scanning at the store checkout.
+
+> [!WARNING]
+> **Current Limitations — eBons & Coupons**
+>
+> Despite simulating the official REWE Mobile App via mTLS client certificates, REWE's personal data endpoints are protected by a second layer of authentication:
+>
+> - **eBons (receipts)** (`/api/v1/ebons`) and **Coupons** (`/api/v1/coupons`) require a proprietary, user-specific OAuth2 token that is only issued by the official REWE iOS/Android App — it is **not** the `rstp` web session cookie.
+> - The mTLS certificates bundled with this integration only authenticate the *client app identity*, not the *logged-in user*.
+> - Until a compatible token exchange endpoint is discovered, the `Activated Coupons`, `Available Coupons`, and `Last Receipt` sensors will always show `0 items` / `Keine Kassenbons`.
+
+Without account credentials, the integration operates in public mode and fetches weekly offers and market details.
+
+---
+
+### Option 1: Loyalty Card Barcode Only *(simplest — 10 seconds)*
+
+If you only want the **Checkout QR Code**:
+1. Open the official **REWE App** or check your physical **REWE Bonus Card**.
+2. Copy the **13-digit barcode number** (under the barcode on your physical card or in the app under *REWE Bonus*).
+3. In Home Assistant, go to **Settings > Devices & Services > REWE Discounts > Options**.
+4. Select **Configure REWE Bonus / Customer Account**.
+5. Paste your barcode number into **REWE Bonus Card Barcode Number**.
+6. Submit. A new **Loyalty Card QR Code (`image`)** entity appears under the **REWE Account (DE)** device.
+
+---
+
+### Option 2: Session Token *(currently no additional benefit)*
+
+A Session Token field exists in the integration for future use. At this time it does **not** unlock eBons or Coupons (see limitation above). You can skip this step.
+
+<details>
+<summary>How to extract the <code>rstp</code> cookie anyway (for future use / debugging)</summary>
+
+1. Open [www.rewe.de](https://www.rewe.de) in your browser and log in.
+2. Press **F12** → **Application** tab (Chrome/Edge) or **Storage** tab (Firefox).
+3. Under **Cookies** → `https://www.rewe.de`, find the cookie named **`rstp`**.
+4. Copy its full value (`eyJ...`) and paste it as Session Token in Home Assistant.
+
+</details>
+
+---
+
 ## 🛠️ Options Flow & Account Features
 
-You can easily configure the integration in Home Assistant without any IT knowledge:
+You can easily configure or update the integration at any time:
 
-1. Go to **Settings > Devices & Services**.
-2. Find **REWE Discounts** and click **Configure**.
-3. **Update Interval**: Set how often offers refresh in hours (default: 24 hours).
-4. **REWE Bonus Card Barcode Number** *(Optional)*: Enter your REWE Bonus card barcode number to display a ready-to-scan QR Code on your dashboard or phone for checkouts.
-5. **REWE Account Session Token** *(Optional)*: Enter your REWE account session token to enable personal **eBons (Kassenbons)**, **Available Coupons**, and **Activated Coupons**.
-6. **Auto-Activate Coupons**: Enable this checkbox to automatically activate new coupons in the background as soon as they become available.
+1. Go to **Settings > Devices & Services > REWE Discounts**.
+2. Click **Configure** (Options).
+3. Choose an action:
+   - **⚙️ Save settings**: Update update interval (1–24 hours).
+   - **💳 Configure REWE Bonus / Customer Account**: Add or update your Loyalty Card number, Session Token, or Auto-Activation preference.
+   - **🚪 Log out / Remove Account Data**: Clears account credentials and removes the Account Device.
 
 ## 🃏 Lovelace Cards
 

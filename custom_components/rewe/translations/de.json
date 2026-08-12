@@ -59,10 +59,10 @@
       },
       "login": {
         "title": "REWE Kundenkonto & Bonuskarten Einrichtung",
-        "description": "### 💳 REWE Bonus / Kundenkonto\n\n- **Kartennummer / Barcode**: Gib deine REWE Bonus Kartennummer ein, um einen scannbaren QR-Code für die Kasse zu erstellen.\n- **Konto Session-Token**: Gib deinen Konto Token ein, um Kassenbons und Coupons zu synchronisieren.\n\n📖 Eine genaue Anleitung zum Auslesen des Tokens findest du in der [REWE Dokumentation](https://github.com/FaserF/ha-rewe).",
+        "description": "### 💳 REWE Bonus / Kundenkonto\n\n- **Kartennummer / Barcode**: Gib deine REWE Bonus Kartennummer ein, um einen scannbaren QR-Code für die Kasse zu erstellen.\n- **Konto Session-Token**: Gib deinen `rstp` Session-Cookie-Wert (beginnt mit `ey...`) von www.rewe.de ein (F12 > Anwendung > Cookies).\n\n📖 Eine genaue Anleitung findest du in der REWE Dokumentation auf GitHub.",
         "data": {
           "card_number": "REWE Bonus Kartennummer",
-          "user_token": "REWE Konto Session-Token (Optional)",
+          "user_token": "REWE Session Token (rstp Cookie-Wert)",
           "auto_activate_coupons": "Coupons automatisch im Hintergrund aktivieren"
         }
       }

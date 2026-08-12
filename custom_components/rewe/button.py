@@ -28,7 +28,7 @@ async def async_setup_entry(
     )
     async_add_entities([ReweForceUpdateButton(coordinator)], update_before_add=False)
 
-    if coordinator.user_token:
+    if coordinator.user_token and coordinator.user_token.strip():
         created_buttons = hass.data[DOMAIN].setdefault(
             "_created_account_buttons", set()
         )

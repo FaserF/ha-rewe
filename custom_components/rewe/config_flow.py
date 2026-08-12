@@ -353,9 +353,7 @@ class ReweOptionsFlowHandler(config_entries.OptionsFlow):
         current_user_token = self._config_entry.options.get(
             CONF_REFRESH_TOKEN, self._config_entry.data.get(CONF_REFRESH_TOKEN, "")
         )
-        current_auto_activate = self._config_entry.options.get(
-            CONF_AUTO_ACTIVATE_COUPONS, False
-        )
+        self._config_entry.options.get(CONF_AUTO_ACTIVATE_COUPONS, False)
         is_logged_in = bool(current_user_token or current_card_number)
 
         action_choices: dict[str, str] = {"save": "Save settings"}
@@ -365,34 +363,23 @@ class ReweOptionsFlowHandler(config_entries.OptionsFlow):
         else:
             action_choices["login"] = "Configure REWE Bonus / Customer Account"
 
-        schema_dict: dict[Any, Any] = {
-            vol.Optional(
-                CONF_UPDATE_INTERVAL, default=current_interval
-            ): NumberSelector(
-                NumberSelectorConfig(
-                    min=MIN_UPDATE_INTERVAL,
-                    max=MAX_UPDATE_INTERVAL,
-                    step=1,
-                    unit_of_measurement="hours",
-                    mode=NumberSelectorMode.BOX,
-                )
-            ),
-        }
+        options_schema = vol.Schema(
+            {
+                vol.Optional(
+                    CONF_UPDATE_INTERVAL, default=current_interval
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        min=MIN_UPDATE_INTERVAL,
+                        max=MAX_UPDATE_INTERVAL,
+                        step=1,
+                        unit_of_measurement="hours",
+                        mode=NumberSelectorMode.BOX,
+                    )
+                ),
+                vol.Required("action", default="save"): vol.In(action_choices),
+            }
+        )
 
-        if is_logged_in:
-            schema_dict[vol.Optional(CONF_CARD_NUMBER, default=current_card_number)] = (
-                str
-            )
-            schema_dict[
-                vol.Optional(CONF_REFRESH_TOKEN, default=current_user_token)
-            ] = str
-            schema_dict[
-                vol.Optional(CONF_AUTO_ACTIVATE_COUPONS, default=current_auto_activate)
-            ] = bool
-
-        schema_dict[vol.Required("action", default="save")] = vol.In(action_choices)
-
-        options_schema = vol.Schema(schema_dict)
         return self.async_show_form(step_id="init", data_schema=options_schema)
 
     async def async_step_login(
@@ -400,6 +387,11 @@ class ReweOptionsFlowHandler(config_entries.OptionsFlow):
     ) -> config_entries.ConfigFlowResult:
         """Handle account token / card number configuration in options."""
         if user_input is not None:
+            user_token = user_input.get(CONF_REFRESH_TOKEN, "").strip()
+            new_data = {**self._config_entry.data, CONF_REFRESH_TOKEN: user_token}
+            self.hass.config_entries.async_update_entry(
+                self._config_entry, data=new_data
+            )
             new_options = {**self._config_entry.options, **user_input}
             return self.async_create_entry(title="", data=new_options)
 
