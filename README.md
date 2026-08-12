@@ -36,8 +36,9 @@ It groups all sensors under a single market device and implements advanced lock-
   - Grouped under a dedicated **REWE Account (DE)** device with direct link to your REWE Bonus web portal.
 
 > [!WARNING]
-> **eBons (receipts) and Coupons are currently NOT supported.**
-> REWE's personal data endpoints (`/api/v1/ebons`, `/api/v1/coupons`) require a proprietary OAuth2 token issued exclusively by the official REWE iOS/Android app — the web session cookie (`rstp`) does **not** grant access to these endpoints. Until a compatible token exchange is discovered, those sensors will always show `0 items` / `Keine Kassenbons`.
+> **eBons (receipts), Coupons, and Recipe of the Day are currently NOT supported / limited.**
+> - **eBons & Coupons**: REWE's personal data endpoints (`/api/v1/ebons`, `/api/v1/coupons`) require a proprietary OAuth2 token issued exclusively by the official REWE iOS/Android app — the web session cookie (`rstp`) does **not** grant access to these endpoints.
+> - **Recipe of the Day**: REWE's mobile API endpoint for recipes (`/api/v3/recipe-hub`) is protected by strict Akamai bot protection / WAF rules (returning 403 Forbidden). The **Recipe of the Day** sensor is disabled by default and will show `Keine Kassenbons` / `Kein Rezept verfügbar`.
 
 > [!NOTE]
 > **Offers Preview** and **REWE Bonus Preview** show `0` items during the week (Sunday through Friday) and only populate starting on **Saturdays**, because REWE publishes next week's offers and bonus discounts only on Saturdays.

@@ -445,6 +445,7 @@ class ReweRecipeOfTheDaySensor(
     _attr_icon = "mdi:silverware-fork-knife"
     _attr_has_entity_name = True
     _attr_name = "Recipe of the Day"
+    _attr_entity_registry_enabled_default = False
 
     def __init__(self, coordinator: ReweDataUpdateCoordinator) -> None:
         super().__init__(coordinator)
