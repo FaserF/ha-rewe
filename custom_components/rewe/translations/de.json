@@ -53,6 +53,16 @@
           "update_interval": "Aktualisierungsintervall (Stunden, mindestens 1, maximal 24)",
           "card_number": "REWE Bonus Kartennummer",
           "user_token": "REWE Konto Session-Token (Optional)",
+          "auto_activate_coupons": "Coupons automatisch im Hintergrund aktivieren",
+          "action": "Aktion auswählen"
+        }
+      },
+      "login": {
+        "title": "REWE Kundenkonto & Bonuskarten Einrichtung",
+        "description": "### 💳 REWE Bonus / Kundenkonto\n\n- **Kartennummer / Barcode**: Gib deine REWE Bonus Kartennummer ein, um einen scannbaren QR-Code für die Kasse zu erstellen.\n- **Konto Session-Token**: Gib deinen Konto Token ein, um Kassenbons und Coupons zu synchronisieren.\n\n📖 Eine genaue Anleitung zum Auslesen des Tokens findest du in der [REWE Dokumentation](https://github.com/FaserF/ha-rewe).",
+        "data": {
+          "card_number": "REWE Bonus Kartennummer",
+          "user_token": "REWE Konto Session-Token (Optional)",
           "auto_activate_coupons": "Coupons automatisch im Hintergrund aktivieren"
         }
       }

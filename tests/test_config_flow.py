@@ -182,4 +182,4 @@ async def test_options_flow(hass: HomeAssistant) -> None:
     )
 
     assert result["type"] == "create_entry"
-    assert result["data"] == {"update_interval": 12}
+    assert result["data"]["update_interval"] == 12
