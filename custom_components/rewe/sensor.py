@@ -42,10 +42,24 @@ async def async_setup_entry(
             ReweNextBonusSensor(coordinator),
             ReweMarketStatusSensor(coordinator),
             ReweRecallsSensor(coordinator),
-            ReweRecipeOfTheDaySensor(coordinator),
         ],
         update_before_add=False,
     )
+
+    if coordinator.user_token:
+        created_account_entities = hass.data[DOMAIN].setdefault(
+            "_created_account_entities", set()
+        )
+        if coordinator.account_key not in created_account_entities:
+            created_account_entities.add(coordinator.account_key)
+            async_add_entities(
+                [
+                    ReweActivatedCouponsSensor(coordinator),
+                    ReweAvailableCouponsSensor(coordinator),
+                    ReweLastReceiptSensor(coordinator),
+                ],
+                update_before_add=False,
+            )
 
 
 class ReweSensor(CoordinatorEntity[ReweDataUpdateCoordinator], SensorEntity):
@@ -486,3 +500,161 @@ class ReweRecipeOfTheDaySensor(
         recipe_hub = self.coordinator.data.get("recipe_hub", {})
         recipe = recipe_hub.get("recipeOfTheDay", {})
         return bool(recipe.get("title"))
+
+
+class ReweActivatedCouponsSensor(
+    CoordinatorEntity[ReweDataUpdateCoordinator], SensorEntity
+):
+    """Represents activated REWE Bonus coupons."""
+
+    _attr_icon = "mdi:ticket-confirmation"
+    _attr_native_unit_of_measurement = "items"
+    _attr_has_entity_name = True
+    _attr_name = "Activated Coupons"
+    _unrecorded_attributes = frozenset({"coupons"})
+
+    def __init__(self, coordinator: ReweDataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        self._account_key = coordinator.account_key
+        self._attr_unique_id = f"rewe_{self._account_key}_activated_coupons"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, self._account_key)},
+            name="REWE Account (DE)",
+            manufacturer="REWE",
+            model="REWE Customer Account",
+            configuration_url=coordinator.account_configuration_url,
+        )
+
+    @property
+    def _activated_coupons(self) -> list[dict[str, Any]]:
+        if not self.coordinator.data:
+            return []
+        coupons: list[dict[str, Any]] = self.coordinator.data.get("coupons", [])
+        return [c for c in coupons if c.get("activated", False)]
+
+    @property
+    def native_value(self) -> int | None:
+        if not self.coordinator.data:
+            return None
+        return len(self._activated_coupons)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        coupons = self._activated_coupons
+        return {
+            "coupons": coupons,
+            ATTR_ATTRIBUTION: ATTRIBUTION,
+        }
+
+    @property
+    def available(self) -> bool:
+        return (
+            self.coordinator.data is not None
+            and "coupons" in self.coordinator.data
+            and bool(self.coordinator.user_token)
+        )
+
+
+class ReweAvailableCouponsSensor(
+    CoordinatorEntity[ReweDataUpdateCoordinator], SensorEntity
+):
+    """Represents available (non-activated) REWE Bonus coupons."""
+
+    _attr_icon = "mdi:ticket-percent"
+    _attr_native_unit_of_measurement = "items"
+    _attr_has_entity_name = True
+    _attr_name = "Available Coupons"
+    _unrecorded_attributes = frozenset({"coupons"})
+
+    def __init__(self, coordinator: ReweDataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        self._account_key = coordinator.account_key
+        self._attr_unique_id = f"rewe_{self._account_key}_available_coupons"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, self._account_key)},
+            name="REWE Account (DE)",
+            manufacturer="REWE",
+            model="REWE Customer Account",
+            configuration_url=coordinator.account_configuration_url,
+        )
+
+    @property
+    def _available_coupons(self) -> list[dict[str, Any]]:
+        if not self.coordinator.data:
+            return []
+        coupons: list[dict[str, Any]] = self.coordinator.data.get("coupons", [])
+        return [c for c in coupons if not c.get("activated", False)]
+
+    @property
+    def native_value(self) -> int | None:
+        if not self.coordinator.data:
+            return None
+        return len(self._available_coupons)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        coupons = self._available_coupons
+        return {
+            "coupons": coupons,
+            ATTR_ATTRIBUTION: ATTRIBUTION,
+        }
+
+    @property
+    def available(self) -> bool:
+        return (
+            self.coordinator.data is not None
+            and "coupons" in self.coordinator.data
+            and bool(self.coordinator.user_token)
+        )
+
+
+class ReweLastReceiptSensor(CoordinatorEntity[ReweDataUpdateCoordinator], SensorEntity):
+    """Represents the last REWE purchase receipt."""
+
+    _attr_icon = "mdi:receipt"
+    _attr_has_entity_name = True
+    _attr_name = "Last Receipt"
+
+    def __init__(self, coordinator: ReweDataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        self._account_key = coordinator.account_key
+        self._attr_unique_id = f"rewe_{self._account_key}_last_receipt"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, self._account_key)},
+            name="REWE Account (DE)",
+            manufacturer="REWE",
+            model="REWE Customer Account",
+            configuration_url=coordinator.account_configuration_url,
+        )
+
+    @property
+    def native_value(self) -> str | None:
+        if not self.coordinator.data:
+            return None
+        receipt = self.coordinator.data.get("last_receipt")
+        if not receipt:
+            return None
+        total = receipt.get("total")
+        currency = receipt.get("currency", "EUR")
+        return f"{total} {currency}".strip() if total is not None else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        data = self.coordinator.data or {}
+        receipt = data.get("last_receipt") or {}
+        return {
+            "date": receipt.get("date"),
+            "store": receipt.get("store"),
+            "total": receipt.get("total"),
+            "currency": receipt.get("currency"),
+            "articles_count": receipt.get("articles_count"),
+            ATTR_ATTRIBUTION: ATTRIBUTION,
+        }
+
+    @property
+    def available(self) -> bool:
+        return (
+            self.coordinator.data is not None
+            and "last_receipt" in self.coordinator.data
+            and bool(self.coordinator.user_token)
+        )

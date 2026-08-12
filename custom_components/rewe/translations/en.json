@@ -5,7 +5,17 @@
       "user": {
         "description": "Enter your REWE Market ID directly, or type your city / postal code to search for nearby REWE markets.",
         "data": {
-          "search_or_id": "REWE Market ID or Search Query"
+          "search_or_id": "REWE Market ID or Search Query",
+          "login_to_rewe_account": "Configure REWE Bonus / Customer Account"
+        }
+      },
+      "login": {
+        "title": "REWE Customer Account Setup",
+        "description": "Enter your REWE Bonus card number to generate a QR Code, or your Account Session Token to view eBons and coupons.",
+        "data": {
+          "card_number": "REWE Bonus Card Barcode Number",
+          "user_token": "REWE Account Session Token (Optional)",
+          "auto_activate_coupons": "Automatically activate coupons in background"
         }
       },
       "select_market": {
@@ -41,7 +51,9 @@
         "title": "Configure REWE weekly offers",
         "data": {
           "update_interval": "Update Interval (hours, min 1, max 24)",
-          "card_number": "REWE Bonus Card Barcode Number"
+          "card_number": "REWE Bonus Card Barcode Number",
+          "user_token": "REWE Account Session Token (Optional)",
+          "auto_activate_coupons": "Automatically activate coupons in background"
         }
       }
     }

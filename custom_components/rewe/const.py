@@ -8,6 +8,8 @@ PLATFORMS = ["sensor", "button", "binary_sensor", "image"]
 CONF_MARKET_ID = "market_id"
 CONF_UPDATE_INTERVAL = "update_interval"
 CONF_CARD_NUMBER = "card_number"
+CONF_REFRESH_TOKEN = "user_token"
+CONF_AUTO_ACTIVATE_COUPONS = "auto_activate_coupons"
 
 # Defaults
 DEFAULT_UPDATE_INTERVAL = 24  # hours

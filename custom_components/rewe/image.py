@@ -28,12 +28,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up REWE Loyalty Card QR Code image entity from a config entry."""
     coordinator: ReweDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
-
-    # Global set to track created account image entities across multiple market entries
-    created_images = hass.data[DOMAIN].setdefault("_created_account_images", set())
-
-    if coordinator.card_number and coordinator.account_key not in created_images:
-        created_images.add(coordinator.account_key)
+    if coordinator.card_number:
         async_add_entities(
             [ReweLoyaltyCardQrImage(hass, coordinator)], update_before_add=False
         )
@@ -62,11 +57,12 @@ class ReweLoyaltyCardQrImage(CoordinatorEntity[ReweDataUpdateCoordinator], Image
         ).hexdigest()[:32]
 
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, self._account_key)},
-            name="REWE Account (DE)",
+            identifiers={(DOMAIN, coordinator.market_id)},
+            name=coordinator.config_entry.title,
             manufacturer="REWE",
-            model="REWE Customer Account",
-            configuration_url=coordinator.account_configuration_url,
+            model="Market Offers",
+            entry_type=None,
+            configuration_url=coordinator.configuration_url,
         )
         self._cached_png: bytes | None = None
         self._cached_id: str | None = None

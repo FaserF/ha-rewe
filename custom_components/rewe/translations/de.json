@@ -5,7 +5,17 @@
       "user": {
         "description": "Gib deine REWE-Markt-ID direkt ein oder gib deine Stadt / Postleitzahl ein, um nach nahegelegenen REWE-Märkten zu suchen.",
         "data": {
-          "search_or_id": "REWE-Markt-ID oder Suchanfrage"
+          "search_or_id": "REWE-Markt-ID oder Suchanfrage",
+          "login_to_rewe_account": "REWE Bonus / Kundenkonto konfigurieren"
+        }
+      },
+      "login": {
+        "title": "REWE Kundenkonto Einrichtung",
+        "description": "Gib deine REWE Bonus Kartennummer ein, um einen QR-Code für die Kasse zu erstellen, oder deinen Konto Session-Token für Kassenbons und Coupons.",
+        "data": {
+          "card_number": "REWE Bonus Kartennummer",
+          "user_token": "REWE Konto Session-Token (Optional)",
+          "auto_activate_coupons": "Coupons automatisch im Hintergrund aktivieren"
         }
       },
       "select_market": {
@@ -41,7 +51,9 @@
         "title": "REWE wöchentliche Angebote konfigurieren",
         "data": {
           "update_interval": "Aktualisierungsintervall (Stunden, mindestens 1, maximal 24)",
-          "card_number": "REWE Bonus Kartennummer"
+          "card_number": "REWE Bonus Kartennummer",
+          "user_token": "REWE Konto Session-Token (Optional)",
+          "auto_activate_coupons": "Coupons automatisch im Hintergrund aktivieren"
         }
       }
     }
