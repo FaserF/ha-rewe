@@ -59,7 +59,7 @@
       },
       "login": {
         "title": "REWE Account & Loyalty Card Setup",
-        "description": "### 💳 REWE Bonus / Customer Account\n\n- **Barcode / Card Number**: Enter your REWE Bonus card number to display a live QR code for scanning at checkout.\n- **Account Session Token**: Enter your `rstp` session cookie value (starts with `ey...`) from www.rewe.de (F12 > Application > Cookies).\n\n📖 For detailed instructions, see the REWE Integration Documentation on GitHub.",
+        "description": "### 💳 REWE Bonus / Customer Account\n\n- **Barcode / Card Number**: Enter your REWE Bonus card number to display a live QR code for scanning at checkout.\n- **Account Session Token**: Enter your `rstp` session cookie value (starts with `ey...`) from {website_url} (F12 > Application > Cookies).\n\n📖 For detailed instructions, see the REWE Integration Documentation on GitHub.",
         "data": {
           "card_number": "REWE Bonus Card Barcode Number",
           "user_token": "REWE Session Token (rstp cookie value)",

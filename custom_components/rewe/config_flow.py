@@ -412,4 +412,8 @@ class ReweOptionsFlowHandler(config_entries.OptionsFlow):
                 ): bool,
             }
         )
-        return self.async_show_form(step_id="login", data_schema=schema)
+        return self.async_show_form(
+            step_id="login",
+            data_schema=schema,
+            description_placeholders={"website_url": "www.rewe.de"},
+        )
