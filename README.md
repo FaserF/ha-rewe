@@ -164,10 +164,10 @@ You can easily configure or update the integration at any time:
 
 The community has built dedicated cards to display REWE discounts beautifully in your dashboard.
 
-### Custom REWE Discounts Card
+### Custom Discounts Card
 A dedicated Lovelace card maintained by the community:
 
-[![REWE Discounts Card](https://img.shields.io/badge/Lovelace-REWE%20Discounts%20Card-brightgreen?style=for-the-badge&logo=home-assistant)](https://github.com/schblondie/ha-rewe-discounts-card)
+[![Discounts Card](https://img.shields.io/badge/Lovelace-%20Discounts%20Card-brightgreen?style=for-the-badge&logo=home-assistant)](https://github.com/schblondie/discounts-card)
 
 ---
 
