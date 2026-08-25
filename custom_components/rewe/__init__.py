@@ -126,7 +126,7 @@ async def _async_discover_markets(hass: core.HomeAssistant) -> None:
                 dist = _haversine_km(
                     ha_lat, ha_lon, float(market_lat), float(market_lon)
                 )
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 pass  # keep default distance → included
 
         if dist <= DISCOVERY_RADIUS_KM:

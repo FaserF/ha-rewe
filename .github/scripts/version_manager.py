@@ -44,7 +44,7 @@ def get_current_version(manifest_path=None):
                 )
         if v_tags:
             return max(v_tags, key=lambda x: x["key"])["tag"]
-    except (subprocess.CalledProcessError, IndexError, ValueError):
+    except subprocess.CalledProcessError, IndexError, ValueError:
         pass
     if manifest_path and os.path.exists(manifest_path):
         with open(manifest_path, encoding="utf-8") as f:
@@ -80,7 +80,7 @@ def calculate_version(rtype, level="patch", curr=None, now=None, override=None):
         return override
 
     if now is None:
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
     if curr is None:
         curr = get_current_version(MANIFEST_FILE)
 

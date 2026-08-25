@@ -206,7 +206,7 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
                         "Loaded last success timestamp from cache: %s",
                         self._last_success,
                     )
-                except (ValueError, TypeError):
+                except ValueError, TypeError:
                     self._last_success = None
         else:
             _LOGGER.debug("No cached REWE data found for market %s", self.market_id)

@@ -35,9 +35,9 @@ def generate_mock_pfx(password: bytes) -> bytes:
         .issuer_name(issuer)
         .public_key(private_key.public_key())
         .serial_number(x509.random_serial_number())
-        .not_valid_before(datetime.datetime.now(datetime.timezone.utc))
+        .not_valid_before(datetime.datetime.now(datetime.UTC))
         .not_valid_after(
-            datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1)
+            datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=1)
         )
         .sign(private_key, SHA256())
     )
