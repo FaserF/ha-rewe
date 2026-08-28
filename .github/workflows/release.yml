@@ -1,4 +1,4 @@
-﻿---
+---
 name: Release
 
 on:
@@ -14,18 +14,8 @@ on:
           - beta
           - nightly
 
-      bump_level:
-        description: "Bump Level (SemVer only: major, minor, patch)"
-        required: false
-        default: "patch"
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
-
       version_override:
-        description: "Manually override new version (e.g. 1.2.3 or 2026.6.2b1). Leave empty to use automatic calculation."
+        description: "Manually override new version (e.g. 2026.8.2 or 2026.8.2b1). Leave empty to use automatic CalVer (Year.Month.Patch)."
         required: false
         type: string
   push:
@@ -38,6 +28,7 @@ on:
       - 'CHANGELOG.md'
       - '.github/workflows/issue-orchestrator.yml'
       - '.github/ISSUE_TEMPLATE/**'
+
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-release
@@ -71,13 +62,14 @@ jobs:
         shell: bash
         env:
           RELEASE_TYPE: ${{ github.event.inputs.release_type || (contains(github.event.head_commit.message, '[bump-version]') && 'stable' || 'beta') }}
-          BUMP_LEVEL: ${{ github.event.inputs.bump_level || 'patch' }}
+          BUMP_LEVEL: patch
           VERSION_OVERRIDE: ${{ inputs.version_override }}
           REPO: ${{ github.repository }}
           OWNER: ${{ github.repository_owner }}
           REPO_NAME: ${{ github.event.repository.name }}
         run: |
           python .github/scripts/calculate_release_details.py
+
 
       - name: Upload Release Body
         uses: actions/upload-artifact@v7
@@ -112,7 +104,7 @@ jobs:
       - name: Update Files
         shell: bash
         run: |
-          python .github/scripts/version_manager.py bump --type ${{ github.event.inputs.release_type || (contains(github.event.head_commit.message, '[bump-version]') && 'stable' || 'beta') }} --level ${{ github.event.inputs.bump_level || 'patch' }} --override "${{ github.event.inputs.version_override || '' }}"
+          python .github/scripts/version_manager.py bump --type ${{ github.event.inputs.release_type || (contains(github.event.head_commit.message, '[bump-version]') && 'stable' || 'beta') }} --level patch --override "${{ github.event.inputs.version_override || '' }}"
 
           if [ -f .github/scripts/update_templates.py ]; then
             python .github/scripts/update_templates.py "${{ needs.versioning.outputs.version }}"
