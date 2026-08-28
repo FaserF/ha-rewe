@@ -187,6 +187,7 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
                 "recalls",
                 "service_portfolio",
                 "recipe_hub",
+                "regular_products_by_filter",
             }
             if not required_keys.issubset(cache.keys()):
                 _LOGGER.info(
@@ -196,6 +197,18 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
                 )
                 await self.store.async_remove()
                 return
+
+            # Check if all current product filters are present in cached regular_products_by_filter
+            cached_filters = set(cache.get("regular_products_by_filter", {}).keys())
+            current_configured_filters = {
+                f.strip() for f in self.product_filters if f.strip()
+            }
+            if not current_configured_filters.issubset(cached_filters):
+                _LOGGER.info(
+                    "REWE cache missing newly configured filters (%s) – triggering refresh",
+                    current_configured_filters - cached_filters,
+                )
+                self._force_update = True
 
             _LOGGER.debug(
                 "Successfully loaded cached REWE data for market %s", self.market_id
@@ -453,6 +466,38 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
                 _LOGGER.warning("Could not fetch recipe hub: %s", e)
                 recipe_hub = {}
 
+            # Fetch regular products for product filters if configured
+            regular_products_by_filter: dict[str, list[dict[str, Any]]] = {}
+            for pfilter in self.product_filters:
+                if pfilter.strip():
+                    try:
+                        p_results = client.search_products(
+                            pfilter.strip(), self.market_id, str(zip_code or "")
+                        )
+                        parsed_prods: list[dict[str, Any]] = []
+                        for prod in p_results:
+                            listing = prod.get("listing", {})
+                            price_cents = listing.get("currentRetailPrice")
+                            price_formatted = (
+                                f"{price_cents / 100:.2f} €".replace(".", ",")
+                                if price_cents is not None
+                                else ""
+                            )
+                            parsed_prods.append(
+                                {
+                                    ATTR_DISCOUNT_TITLE: prod.get("title", ""),
+                                    ATTR_DISCOUNT_PRICE: price_formatted,
+                                    ATTR_BASE_PRICE: listing.get("grammage", ""),
+                                    ATTR_PICTURE: prod.get("imageURL"),
+                                    ATTR_VALID_DATE: None,
+                                    ATTR_CATEGORY: "Reguläres Sortiment",
+                                    "is_regular_price": True,
+                                }
+                            )
+                        regular_products_by_filter[pfilter.strip()] = parsed_prods
+                    except Exception as e:  # noqa: BLE001
+                        _LOGGER.warning("Could not search product '%s': %s", pfilter, e)
+
         except Exception as exc:
             raise RuntimeError(
                 f"ReweAPIClient.get_discounts failed for market {self.market_id}: {exc}"
@@ -463,6 +508,7 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
         parsed["recalls"] = recalls
         parsed["service_portfolio"] = service_portfolio
         parsed["recipe_hub"] = recipe_hub
+        parsed["regular_products_by_filter"] = regular_products_by_filter
         parsed.setdefault("coupons", [])
         parsed.setdefault("last_receipt", {})
         cookies = client.cookies if isinstance(client.cookies, dict) else {}

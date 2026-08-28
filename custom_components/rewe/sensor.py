@@ -704,34 +704,49 @@ class ReweProductFilterSensor(
 
         return matches
 
+    def _get_regular_products(self) -> list[dict[str, Any]]:
+        """Return regular product results from catalog search."""
+        if not self.coordinator.data:
+            return []
+        reg_map = self.coordinator.data.get("regular_products_by_filter", {})
+        return reg_map.get(self._product_filter, [])
+
     @property
     def native_value(self) -> str | None:
-        """Return the best price or status."""
+        """Return the best price (offer or regular catalog price) or status."""
         matches = self._get_matching_offers()
-        if not matches:
-            return "Nicht im Angebot"
+        if matches:
+            best_price = matches[0].get("price")
+            return str(best_price) if best_price else "Im Angebot"
 
-        best_price = matches[0].get("price")
-        return str(best_price) if best_price else "Im Angebot"
+        regular = self._get_regular_products()
+        if regular:
+            reg_price = regular[0].get("price")
+            return str(reg_price) if reg_price else "Verfügbar"
+
+        return "Nicht im Angebot"
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        """Return attributes for matching offers."""
+        """Return attributes for matching offers and regular products."""
         matches = self._get_matching_offers()
+        regular = self._get_regular_products()
         is_on_sale = len(matches) > 0
-        best_match = matches[0] if is_on_sale else {}
+
+        active_match = matches[0] if is_on_sale else (regular[0] if regular else {})
 
         return {
             "filter": self._product_filter,
             "on_sale": is_on_sale,
-            "match_count": len(matches),
-            "best_price": best_match.get("price"),
-            "base_price": best_match.get("base_price"),
-            "product_title": best_match.get("product"),
-            "category": best_match.get("category"),
-            "valid_until": best_match.get("valid_until"),
-            "picture_link": best_match.get("picture_link"),
-            "matches": matches,
+            "is_regular_price": not is_on_sale and len(regular) > 0,
+            "match_count": len(matches) if is_on_sale else len(regular),
+            "best_price": active_match.get("price"),
+            "base_price": active_match.get("base_price"),
+            "product_title": active_match.get("product"),
+            "category": active_match.get("category"),
+            "valid_until": active_match.get("valid_until"),
+            "picture_link": active_match.get("picture_link"),
+            "matches": matches if is_on_sale else regular,
             ATTR_ATTRIBUTION: ATTRIBUTION,
         }
 

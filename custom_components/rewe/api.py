@@ -191,3 +191,36 @@ class ReweAPIClient:
 
         _LOGGER.warning("Recipe hub request did not return a dictionary")
         return {}
+
+    def search_products(
+        self, query: str, market_id: str, zip_code: str = ""
+    ) -> list[dict[str, Any]]:
+        """Search products in REWE catalog for the market (regular prices & offers)."""
+        _LOGGER.debug(
+            "Searching products for query '%s' at market %s", query, market_id
+        )
+        url = "https://mobile-clients-api.rewe.de/api/products"
+        headers = {
+            "User-Agent": "REWE-Mobile-Client/3.17.1.32270 Android/11 Phone/Google_sdk_gphone_x86_64",
+            "Accept": "application/json",
+            "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
+            "rd-service-types": "PICKUP",
+            "rd-market-id": market_id,
+            "rd-postcode": zip_code or "80331",
+        }
+        try:
+            response = requests.get(
+                url,
+                params={"query": query},
+                headers=headers,
+                cert=(self.cert_path, self.key_path),
+                cookies=self.cookies,
+                timeout=30.0,
+            )
+            response.raise_for_status()
+            data = response.json()
+            if isinstance(data, dict):
+                return data.get("data", {}).get("products", {}).get("products", [])
+        except Exception as exc:  # noqa: BLE001
+            _LOGGER.warning("Product search failed for '%s': %s", query, exc)
+        return []
