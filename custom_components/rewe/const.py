@@ -10,6 +10,7 @@ CONF_UPDATE_INTERVAL = "update_interval"
 CONF_CARD_NUMBER = "card_number"
 CONF_REFRESH_TOKEN = "user_token"
 CONF_AUTO_ACTIVATE_COUPONS = "auto_activate_coupons"
+CONF_PRODUCT_FILTERS = "product_filters"
 
 # Defaults
 DEFAULT_UPDATE_INTERVAL = 24  # hours
