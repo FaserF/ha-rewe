@@ -663,7 +663,22 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
                     if is_bonus != include_bonus:
                         continue
 
-                    raw_title = item.get("title") or ""
+                    # Skip banner / decorative elements (e.g. cellType == 'MOOD')
+                    if item.get("cellType") == "MOOD":
+                        continue
+
+                    # Check for nested 'product' object schema (used in some markets e.g. REWE Center)
+                    prod_obj = (
+                        item.get("product")
+                        if isinstance(item.get("product"), dict)
+                        else None
+                    )
+
+                    raw_title = (
+                        (prod_obj.get("title") if prod_obj else None)
+                        or item.get("title")
+                        or ""
+                    )
                     raw_subtitle = item.get("subtitle") or ""
 
                     title = _clean(str(raw_title))
@@ -674,7 +689,12 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
                     if not title and subtitle:
                         title, subtitle = subtitle, title
 
+                    # Skip empty items where neither title nor subtitle exist
+                    if not title:
+                        continue
+
                     price_data = item.get("priceData", {})
+                    price = ""
                     if isinstance(price_data, dict):
                         # Try multiple known price field names
                         price = (
@@ -683,12 +703,23 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
                             or price_data.get("regularPrice")
                             or ""
                         )
-                    else:
-                        price = str(price_data) if price_data else ""
+                    elif price_data:
+                        price = str(price_data)
+
+                    # Check nested product listing for currentRetailPrice in cents (e.g. 699 -> "6,99 €")
+                    if not price and prod_obj:
+                        listing = prod_obj.get("listing") or {}
+                        raw_cents = listing.get("currentRetailPrice")
+                        if isinstance(raw_cents, (int, float)) and raw_cents > 0:
+                            price = f"{raw_cents / 100:.2f} €".replace(".", ",")
 
                     # REWE API variant: price may also live at top-level "price" key
                     if not price:
-                        price = item.get("price") or ""
+                        top_price = item.get("price")
+                        if isinstance(top_price, (int, float)):
+                            price = f"{top_price / 100:.2f} €".replace(".", ",")
+                        elif top_price:
+                            price = str(top_price)
 
                     # Per-offer valid date (fallback to global)
                     item_valid = offers_valid_date
@@ -696,12 +727,22 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
                     if item_until:
                         item_valid = self._parse_date_field(item_until)
 
-                    # Images
+                    # Images: check item.images, item.imageURL, and prod_obj.imageURL
                     images = item.get("images", [])
-                    image_url = images[0] if images else None
+                    image_url = None
+                    if images and isinstance(images, list):
+                        image_url = images[0]
+                    elif item.get("imageURL"):
+                        image_url = item.get("imageURL")
+                    elif prod_obj and prod_obj.get("imageURL"):
+                        image_url = prod_obj.get("imageURL")
 
                     # REWE Bonus points / cents
-                    loyalty = item.get("loyaltyBonus")
+                    loyalty = item.get("loyaltyBonus") or (
+                        prod_obj.get("listing", {}).get("loyaltyBonus")
+                        if prod_obj
+                        else None
+                    )
                     loyalty_value: int | None = None
                     loyalty_type: str | None = None
                     if isinstance(loyalty, dict):
