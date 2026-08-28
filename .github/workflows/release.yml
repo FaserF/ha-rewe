@@ -196,6 +196,25 @@ jobs:
           name: updated-components
           path: custom_components/
 
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+
+      - name: Install dependencies for cert extraction
+        run: |
+          pip install curl_cffi cryptography
+
+      - name: Download REWE APK & Extract mTLS Certificates
+        run: |
+          mkdir -p custom_components/rewe/certs
+          if python .github/scripts/fetch_rewe_apk.py rewe.apk; then
+            python .github/scripts/extract_rewe_certs.py rewe.apk custom_components/rewe/certs
+            rm -f rewe.apk
+          else
+            echo "::warning::Failed to download APK to extract certs automatically"
+          fi
+
       - name: 📦 Zip Component
         run: |
           DOMAIN=$(python -c "import json, glob; print(json.load(open(glob.glob('custom_components/*/manifest.json')[0]))['domain'])")
