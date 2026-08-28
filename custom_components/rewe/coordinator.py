@@ -649,6 +649,10 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
         categories and are identified by the presence of a ``loyaltyBonus`` field
         on the individual offer object.
         """
+
+        def _clean(s: str) -> str:
+            return s.replace("\n", " ").replace("\u2028", " ").strip()
+
         discounts: list[dict[str, Any]] = []
         for category in categories:
             cat_title = category.get("title", "Unbekannt")
@@ -659,24 +663,32 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
                     if is_bonus != include_bonus:
                         continue
 
-                    title = (
-                        item.get("title", "")
-                        .replace("\n", " ")
-                        .replace("\u2028", " ")
-                        .strip()
-                    )
-                    subtitle = (
-                        item.get("subtitle", "")
-                        .replace("\n", " ")
-                        .replace("\u2028", " ")
-                        .strip()
-                    )
+                    raw_title = item.get("title") or ""
+                    raw_subtitle = item.get("subtitle") or ""
+
+                    title = _clean(str(raw_title))
+                    subtitle = _clean(str(raw_subtitle))
+
+                    # REWE API variant: title empty, product info is in subtitle.
+                    # Swap so that the product name ends up in ATTR_DISCOUNT_TITLE.
+                    if not title and subtitle:
+                        title, subtitle = subtitle, title
+
                     price_data = item.get("priceData", {})
-                    price = (
-                        price_data.get("price", "")
-                        if isinstance(price_data, dict)
-                        else str(price_data)
-                    )
+                    if isinstance(price_data, dict):
+                        # Try multiple known price field names
+                        price = (
+                            price_data.get("price")
+                            or price_data.get("formattedPrice")
+                            or price_data.get("regularPrice")
+                            or ""
+                        )
+                    else:
+                        price = str(price_data) if price_data else ""
+
+                    # REWE API variant: price may also live at top-level "price" key
+                    if not price:
+                        price = item.get("price") or ""
 
                     # Per-offer valid date (fallback to global)
                     item_valid = offers_valid_date
