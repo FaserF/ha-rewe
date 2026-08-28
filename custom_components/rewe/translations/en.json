@@ -51,6 +51,7 @@
         "title": "Configure REWE weekly offers",
         "data": {
           "update_interval": "Update Interval (hours, min 1, max 24)",
+          "product_filters": "Product Search Filters (e.g. Monster Energy, Butter)",
           "card_number": "REWE Bonus Card Barcode Number",
           "user_token": "REWE Account Session Token (Optional)",
           "auto_activate_coupons": "Automatically activate coupons in background",

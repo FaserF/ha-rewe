@@ -34,16 +34,24 @@ async def async_setup_entry(
     _LOGGER.debug(
         "Setting up REWE Discounts sensors for market %s", coordinator.market_id
     )
+    # Set up static sensors
+    sensors: list[SensorEntity] = [
+        ReweSensor(coordinator),
+        ReweNextSensor(coordinator),
+        ReweBonusSensor(coordinator),
+        ReweNextBonusSensor(coordinator),
+        ReweMarketStatusSensor(coordinator),
+        ReweRecallsSensor(coordinator),
+        ReweRecipeOfTheDaySensor(coordinator),
+    ]
+
+    # Set up product filter sensors
+    for product_filter in coordinator.product_filters:
+        if product_filter.strip():
+            sensors.append(ReweProductFilterSensor(coordinator, product_filter.strip()))
+
     async_add_entities(
-        [
-            ReweSensor(coordinator),
-            ReweNextSensor(coordinator),
-            ReweBonusSensor(coordinator),
-            ReweNextBonusSensor(coordinator),
-            ReweMarketStatusSensor(coordinator),
-            ReweRecallsSensor(coordinator),
-            ReweRecipeOfTheDaySensor(coordinator),
-        ],
+        sensors,
         update_before_add=False,
     )
 
@@ -645,3 +653,91 @@ class ReweLastReceiptSensor(CoordinatorEntity[ReweDataUpdateCoordinator], Sensor
     @property
     def available(self) -> bool:
         return self.coordinator.data is not None and bool(self.coordinator.user_token)
+
+
+class ReweProductFilterSensor(
+    CoordinatorEntity[ReweDataUpdateCoordinator], SensorEntity
+):
+    """Represents a filtered product offer/price sensor."""
+
+    _attr_icon = "mdi:tag-search"
+    _attr_has_entity_name = True
+
+    def __init__(
+        self, coordinator: ReweDataUpdateCoordinator, product_filter: str
+    ) -> None:
+        """Initialize the product filter sensor."""
+        super().__init__(coordinator)
+        self._market_id = coordinator.market_id
+        self._product_filter = product_filter
+        import re
+
+        clean_slug = (
+            re.sub(r"[^a-zA-Z0-9_]+", "_", product_filter.lower()).strip("_") or "item"
+        )
+        self._attr_unique_id = f"rewe_{self._market_id}_filter_{clean_slug}"
+        self._attr_name = f"Filter {product_filter}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, self._market_id)},
+            name=coordinator.config_entry.title,
+            manufacturer="REWE",
+            model="Market Offers",
+            entry_type=None,
+            configuration_url=coordinator.configuration_url,
+        )
+
+    def _get_matching_offers(self) -> list[dict[str, Any]]:
+        """Find matching offers across current discounts."""
+        if not self.coordinator.data:
+            return []
+        discounts: list[dict[str, Any]] = self.coordinator.data.get("discounts", [])
+        search_terms = self._product_filter.lower().split()
+        matches: list[dict[str, Any]] = []
+
+        for offer in discounts:
+            title = str(offer.get("product", "")).lower()
+            category = str(offer.get("category", "")).lower()
+            base_price = str(offer.get("base_price", "")).lower()
+            combined = f"{title} {category} {base_price}"
+            if all(term in combined for term in search_terms):
+                matches.append(offer)
+
+        return matches
+
+    @property
+    def native_value(self) -> str | None:
+        """Return the best price or status."""
+        matches = self._get_matching_offers()
+        if not matches:
+            return "Nicht im Angebot"
+
+        best_price = matches[0].get("price")
+        return str(best_price) if best_price else "Im Angebot"
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return attributes for matching offers."""
+        matches = self._get_matching_offers()
+        is_on_sale = len(matches) > 0
+        best_match = matches[0] if is_on_sale else {}
+
+        return {
+            "filter": self._product_filter,
+            "on_sale": is_on_sale,
+            "match_count": len(matches),
+            "best_price": best_match.get("price"),
+            "base_price": best_match.get("base_price"),
+            "product_title": best_match.get("product"),
+            "category": best_match.get("category"),
+            "valid_until": best_match.get("valid_until"),
+            "picture_link": best_match.get("picture_link"),
+            "matches": matches,
+            ATTR_ATTRIBUTION: ATTRIBUTION,
+        }
+
+    @property
+    def available(self) -> bool:
+        """Return True if coordinator has data."""
+        return (
+            self.coordinator.last_update_success or self.coordinator.is_data_valid
+        ) and self.coordinator.data is not None

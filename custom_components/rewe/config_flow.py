@@ -13,6 +13,9 @@ from homeassistant.helpers.selector import (
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
 )
 
 from .api import ReweAPIClient
@@ -21,6 +24,7 @@ from .const import (
     CONF_AUTO_ACTIVATE_COUPONS,
     CONF_CARD_NUMBER,
     CONF_MARKET_ID,
+    CONF_PRODUCT_FILTERS,
     CONF_REFRESH_TOKEN,
     CONF_UPDATE_INTERVAL,
     DEFAULT_UPDATE_INTERVAL,
@@ -332,6 +336,20 @@ class ReweOptionsFlowHandler(config_entries.OptionsFlow):
                 )
                 return self.async_create_entry(title="", data=new_options)
 
+            raw_filters = user_input.get(CONF_PRODUCT_FILTERS, [])
+            if isinstance(raw_filters, str):
+                product_filters = [
+                    f.strip()
+                    for f in raw_filters.replace("\n", ",").split(",")
+                    if f.strip()
+                ]
+            elif isinstance(raw_filters, list):
+                product_filters = [
+                    str(f).strip() for f in raw_filters if str(f).strip()
+                ]
+            else:
+                product_filters = []
+
             return self.async_create_entry(
                 title="",
                 data={
@@ -343,12 +361,14 @@ class ReweOptionsFlowHandler(config_entries.OptionsFlow):
                     CONF_AUTO_ACTIVATE_COUPONS: bool(
                         user_input.get(CONF_AUTO_ACTIVATE_COUPONS, False)
                     ),
+                    CONF_PRODUCT_FILTERS: product_filters,
                 },
             )
 
         current_interval = self._config_entry.options.get(
             CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL
         )
+        current_filters = self._config_entry.options.get(CONF_PRODUCT_FILTERS, [])
         current_card_number = self._config_entry.options.get(CONF_CARD_NUMBER, "")
         current_user_token = self._config_entry.options.get(
             CONF_REFRESH_TOKEN, self._config_entry.data.get(CONF_REFRESH_TOKEN, "")
@@ -374,6 +394,16 @@ class ReweOptionsFlowHandler(config_entries.OptionsFlow):
                         step=1,
                         unit_of_measurement="hours",
                         mode=NumberSelectorMode.BOX,
+                    )
+                ),
+                vol.Optional(
+                    CONF_PRODUCT_FILTERS, default=current_filters
+                ): SelectSelector(
+                    SelectSelectorConfig(
+                        options=current_filters,
+                        multiple=True,
+                        custom_value=True,
+                        mode=SelectSelectorMode.DROPDOWN,
                     )
                 ),
                 vol.Required("action", default="save"): vol.In(action_choices),
