@@ -17,7 +17,7 @@ body:
     attributes:
       label: Integration Version
       description: Which version of ha-rewe are you running? (HACS or integration page)
-      placeholder: e.g. v2026.8.1
+      placeholder: e.g. v2026.8.2
     validations:
       required: true
 
