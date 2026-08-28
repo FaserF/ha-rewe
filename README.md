@@ -185,7 +185,6 @@ A dedicated Lovelace card maintained by the community:
 
 [![Discounts Card](https://img.shields.io/badge/Lovelace-%20Discounts%20Card-brightgreen?style=for-the-badge&logo=home-assistant)](https://github.com/schblondie/discounts-card)
 
-
 ---
 
 ## 🧑‍💻 Development
