@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import math
+import re
 from pathlib import Path
 from typing import Any
 
@@ -12,11 +13,13 @@ from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from .const import (
     CERT_RELATIVE_PATH,
     CONF_MARKET_ID,
+    CONF_PRODUCT_FILTERS,
     DISCOVERY_RADIUS_KM,
     DOMAIN,
     KEY_RELATIVE_PATH,
@@ -254,6 +257,32 @@ async def _async_update_options(
         entry.entry_id,
         entry.options,
     )
+    coordinator = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+    old_filters: list[str] = []
+    if coordinator is not None:
+        old_filters = list(getattr(coordinator, "product_filters", []))
+
+    new_filters: list[str] = [
+        f.strip() for f in entry.options.get(CONF_PRODUCT_FILTERS, []) if f.strip()
+    ]
+    removed_filters = [f for f in old_filters if f not in new_filters]
+
+    if removed_filters and coordinator is not None:
+        ent_reg = er.async_get(hass)
+        for filter_word in removed_filters:
+            clean_slug = (
+                re.sub(r"[^a-zA-Z0-9_]+", "_", filter_word.lower()).strip("_") or "item"
+            )
+            unique_id = f"rewe_{coordinator.market_id}_filter_{clean_slug}"
+            entity_id = ent_reg.async_get_entity_id("sensor", DOMAIN, unique_id)
+            if entity_id:
+                ent_reg.async_remove(entity_id)
+                _LOGGER.debug(
+                    "REWE: Removed stale filter entity %s (unique_id=%s)",
+                    entity_id,
+                    unique_id,
+                )
+
     await hass.config_entries.async_reload(entry.entry_id)
 
 
