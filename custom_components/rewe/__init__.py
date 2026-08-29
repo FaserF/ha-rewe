@@ -129,7 +129,7 @@ async def _async_discover_markets(hass: core.HomeAssistant) -> None:
                 dist = _haversine_km(
                     ha_lat, ha_lon, float(market_lat), float(market_lon)
                 )
-            except TypeError, ValueError:
+            except (TypeError, ValueError):
                 pass  # keep default distance → included
 
         if dist <= DISCOVERY_RADIUS_KM:
@@ -253,9 +253,9 @@ async def _async_update_options(
 ) -> None:
     """Reload the entry when options change."""
     _LOGGER.debug(
-        "Reloading REWE entry %s due to option updates. New options: %s",
+        "Reloading REWE entry %s due to option updates. Option keys: %s",
         entry.entry_id,
-        entry.options,
+        list(entry.options.keys()),
     )
     coordinator = hass.data.get(DOMAIN, {}).get(entry.entry_id)
     old_filters: list[str] = []
@@ -284,6 +284,24 @@ async def _async_update_options(
                 )
 
     await hass.config_entries.async_reload(entry.entry_id)
+
+
+async def async_migrate_entry(
+    hass: core.HomeAssistant, config_entry: config_entries.ConfigEntry
+) -> bool:
+    """Migrate old entry."""
+    _LOGGER.debug("Migrating REWE config entry from version %s", config_entry.version)
+
+    if config_entry.version == 1:
+        # Version 1 -> Version 2 migration
+        new_data = {**config_entry.data}
+        new_options = {**config_entry.options}
+        hass.config_entries.async_update_entry(
+            config_entry, data=new_data, options=new_options, version=2
+        )
+        _LOGGER.info("Migration to version 2 successful")
+
+    return True
 
 
 async def async_unload_entry(

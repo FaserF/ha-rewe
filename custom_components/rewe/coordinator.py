@@ -81,7 +81,7 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
         self.product_filters: list[str] = config.get(CONF_PRODUCT_FILTERS, [])
         self.config_entry = entry
 
-        self.account_key = "account_de"
+        self.account_key = f"account_de_{self.market_id}"
         self.account_configuration_url = "https://www.rewe.de/service/rewe-bonus/"
 
         # Anti-ban state
@@ -90,6 +90,7 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
         self._last_success: datetime | None = None
         self._issue_created: bool = False
         self._force_update: bool = False
+        self._cookies: dict[str, str] = dict(entry.data.get("cookies", {}))
 
         # HA persistent storage for restart-resistance
         self.store: storage.Store = storage.Store(hass, 1, f"{DOMAIN}_{self.market_id}")
@@ -177,6 +178,10 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
         )
         cache = await self.store.async_load()
         if cache:
+            # Load stored cookies if present
+            if "cookies" in cache and isinstance(cache["cookies"], dict):
+                self._cookies = cache["cookies"]
+
             # Validate cache schema – discard stale cache if mandatory keys are missing.
             # This handles cases where data-key renames would otherwise serve zeros.
             required_keys = {
@@ -221,7 +226,7 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
                         "Loaded last success timestamp from cache: %s",
                         self._last_success,
                     )
-                except ValueError, TypeError:
+                except (ValueError, TypeError):
                     self._last_success = None
         else:
             _LOGGER.debug("No cached REWE data found for market %s", self.market_id)
@@ -249,7 +254,9 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
                 self.market_id,
                 self._backoff_until,
             )
-            return self.data
+            raise UpdateFailed(
+                f"REWE API update blocked by backoff until {self._backoff_until}"
+            )
 
         # Restart-resistance: skip if last fetch was very recent
         if not self._force_update and self._last_success is not None:
@@ -310,7 +317,7 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
                     self.market_id,
                 )
                 async with asyncio.timeout(90):
-                    existing_cookies = self.config_entry.data.get("cookies", {})
+                    existing_cookies = self._cookies
                     data, new_cookies = await self.hass.async_add_executor_job(
                         self._fetch_offers_sync, existing_cookies
                     )
@@ -321,18 +328,10 @@ class ReweDataUpdateCoordinator(DataUpdateCoordinator):
             )
             self._last_success = dt_util.now()
             self._consecutive_failures = 0
+            self._cookies = new_cookies
             data["last_success"] = self._last_success.isoformat()
+            data["cookies"] = new_cookies
             await self.store.async_save(data)
-
-            if new_cookies != existing_cookies:
-                _LOGGER.debug(
-                    "REWE market %s: updating session cookies in config entry",
-                    self.market_id,
-                )
-                self.hass.config_entries.async_update_entry(
-                    self.config_entry,
-                    data={**self.config_entry.data, "cookies": new_cookies},
-                )
 
             # Clear any active repair issue
             if self._issue_created:

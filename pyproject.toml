@@ -1,6 +1,6 @@
 [tool.ruff]
 line-length = 88
-target-version = "py314"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "C4"]
@@ -8,7 +8,7 @@ ignore = ["E501", "B008", "SIM102", "SIM105", "SIM117", "E402", "B017", "B904", 
 
 [tool.mypy]
 explicit_package_bases = true
-python_version = "3.14"
+python_version = "3.13"
 show_error_codes = true
 ignore_missing_imports = true
 strict = false

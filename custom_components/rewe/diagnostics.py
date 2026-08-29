@@ -18,6 +18,9 @@ TO_REDACT = {
     "cert",
     "key",
     "webhook_id",
+    "user_token",
+    "card_number",
+    "cookies",
 }
 
 

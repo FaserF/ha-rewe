@@ -43,13 +43,19 @@ It groups all sensors under a single market device and implements advanced lock-
 - **🛒 Detailed Offers Sensors**:
   - **Offers**: Current week's discounted items count, with attributes detailing titles, base prices, active discount prices, categories, and direct links to product images.
   - **Offers Preview**: Next week's upcoming deals.
+  - **Market Status**: Store opening hours, address, and live open/closed status.
+  - **Product Recalls**: Active safety recalls for REWE products.
+  - **Product Filters**: Custom sensors for tracking specific product searches and their regular shelf prices.
 - **⭐ REWE Bonus Point Tracking**:
   - **REWE Bonus**: Displays the count of items in the current week that yield loyalty points/cashback. Attributes list detailed bonus values and types (e.g. points/cents).
   - **REWE Bonus Preview**: Upcoming deals next week that will yield bonus points.
+- **🚚 Delivery & Pickup Binary Sensors**:
+  - **Delivery Available**: Binary sensor showing if REWE delivery service is supported at your ZIP code (disabled by default).
+  - **Pickup Available**: Binary sensor showing if in-store pickup service is supported at your ZIP code (disabled by default).
 - **📸 REWE Loyalty Card QR Code Entity (`image`)**:
   - A dynamic 400x400 PNG QR Code entity rendering your REWE Bonus barcode number for scanning directly at the checkout.
 - **📱 Dedicated REWE Account Device**:
-  - Grouped under a dedicated **REWE Account (DE)** device with direct link to your REWE Bonus web portal.
+  - Grouped under a dedicated **REWE Account (DE)** device with direct link to your REWE Bonus web portal. Includes an **Activate All Coupons** button entity.
 
 > [!WARNING]
 > **eBons (receipts), Coupons, and Recipe of the Day are currently NOT supported / limited.**
@@ -172,7 +178,7 @@ You can easily configure or update the integration at any time:
 1. Go to **Settings > Devices & Services > REWE Discounts**.
 2. Click **Configure** (Options).
 3. Choose an action:
-   - **⚙️ Save settings**: Update update interval (1–24 hours).
+   - **⚙️ Save settings**: Update update interval (1–24 hours) and configure **Product Search Filters** (tracking regular assortment prices).
    - **💳 Configure REWE Bonus / Customer Account**: Add or update your Loyalty Card number, Session Token, or Auto-Activation preference.
    - **🚪 Log out / Remove Account Data**: Clears account credentials and removes the Account Device.
 

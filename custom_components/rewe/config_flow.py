@@ -222,7 +222,9 @@ class ReweConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> config_entries.ConfigFlowResult:
         """Show blocking certificate error screen."""
         _LOGGER.debug("async_step_invalid_certs called with input: %s", user_input)
-        if user_input is not None and self._check_certs_valid():
+        if user_input is not None and await self.hass.async_add_executor_job(
+            self._check_certs_valid
+        ):
             # If the user corrected the certificates and clicked submit, proceed to user step
             _LOGGER.info("Certificates are now valid; moving to user step.")
             return await self.async_step_user()
@@ -350,19 +352,13 @@ class ReweOptionsFlowHandler(config_entries.OptionsFlow):
             else:
                 product_filters = []
 
+            new_options = dict(self._config_entry.options)
+            new_options[CONF_UPDATE_INTERVAL] = int(user_input[CONF_UPDATE_INTERVAL])
+            new_options[CONF_PRODUCT_FILTERS] = product_filters
+
             return self.async_create_entry(
                 title="",
-                data={
-                    CONF_UPDATE_INTERVAL: int(user_input[CONF_UPDATE_INTERVAL]),
-                    CONF_CARD_NUMBER: str(user_input.get(CONF_CARD_NUMBER, "")).strip(),
-                    CONF_REFRESH_TOKEN: str(
-                        user_input.get(CONF_REFRESH_TOKEN, "")
-                    ).strip(),
-                    CONF_AUTO_ACTIVATE_COUPONS: bool(
-                        user_input.get(CONF_AUTO_ACTIVATE_COUPONS, False)
-                    ),
-                    CONF_PRODUCT_FILTERS: product_filters,
-                },
+                data=new_options,
             )
 
         current_interval = self._config_entry.options.get(
