@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any
 
 from homeassistant import config_entries
@@ -46,9 +47,34 @@ async def async_setup_entry(
     ]
 
     # Set up product filter sensors
+    active_slugs = set()
     for product_filter in coordinator.product_filters:
-        if product_filter.strip():
-            sensors.append(ReweProductFilterSensor(coordinator, product_filter.strip()))
+        clean_filter = product_filter.strip()
+        if clean_filter:
+            sensors.append(ReweProductFilterSensor(coordinator, clean_filter))
+            clean_slug = (
+                re.sub(r"[^a-zA-Z0-9_]+", "_", clean_filter.lower()).strip("_")
+                or "item"
+            )
+            active_slugs.add(f"rewe_{coordinator.market_id}_filter_{clean_slug}")
+
+    # Reconcile entity registry: purge any filter entities belonging to this entry that are no longer configured
+    from homeassistant.helpers import entity_registry as er
+
+    ent_reg = er.async_get(hass)
+    entry_entities = er.async_entries_for_config_entry(ent_reg, entry.entry_id)
+    for ent in entry_entities:
+        if (
+            ent.domain == "sensor"
+            and ent.unique_id.startswith(f"rewe_{coordinator.market_id}_filter_")
+            and ent.unique_id not in active_slugs
+        ):
+            ent_reg.async_remove(ent.entity_id)
+            _LOGGER.debug(
+                "REWE: Removed stale filter entity %s (unique_id=%s)",
+                ent.entity_id,
+                ent.unique_id,
+            )
 
     async_add_entities(
         sensors,
