@@ -184,12 +184,16 @@ class ReweAPIClient:
         """Fetch recipe hub/recipe of the day."""
         _LOGGER.debug("Fetching recipe hub")
         url = "https://mobile-clients-api.rewe.de/api/v3/recipe-hub"
-        data = self._request(url)
+        try:
+            data = self._request(url)
+        except Exception as exc:
+            _LOGGER.debug("Recipe hub request not available or not authorized: %s", exc)
+            return {}
 
         if isinstance(data, dict):
             return data
 
-        _LOGGER.warning("Recipe hub request did not return a dictionary")
+        _LOGGER.debug("Recipe hub request did not return a dictionary")
         return {}
 
     def search_products(
