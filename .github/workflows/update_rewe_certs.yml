@@ -56,10 +56,10 @@ jobs:
             
             if [ "$NEW_HASH" != "$OLD_HASH" ]; then
               echo "Certificate changed!"
-              echo "changed=true" >> $GITHUB_OUTPUT
+              echo "changed=true" >> "$GITHUB_OUTPUT"
             else
               echo "No cert changes."
-              echo "changed=false" >> $GITHUB_OUTPUT
+              echo "changed=false" >> "$GITHUB_OUTPUT"
             fi
           else
             echo "Certs extraction failed!"

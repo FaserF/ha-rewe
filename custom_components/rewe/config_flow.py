@@ -6,7 +6,12 @@ import logging
 from pathlib import Path
 from typing import Any
 
-import voluptuous as vol
+import aiohttp  # noqa: F401
+
+try:
+    import probatio as vol
+except ImportError:
+    import voluptuous as vol  # type: ignore[no-redef]
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers.selector import (
