@@ -64,6 +64,10 @@ It groups all sensors under a single market device and implements advanced lock-
 > - **Recipe of the Day**: REWE's mobile API endpoint for recipes (`/api/v3/recipe-hub`) is protected by strict Akamai bot protection / WAF rules (returning 403 Forbidden). The **Recipe of the Day** sensor is disabled by default and will show `Keine Kassenbons` / `Kein Rezept verfügbar`.
 
 > [!NOTE]
+> **Looking for PENNY (REWE Group)?**
+> PENNY operates on separate mobile API endpoints and has its own dedicated integration: **[FaserF/ha-penny](https://github.com/FaserF/ha-penny)** (also aggregated alongside REWE in **[FaserF/ha-grocery-deals](https://github.com/FaserF/ha-grocery-deals)**).
+
+> [!NOTE]
 > **Offers Preview** and **REWE Bonus Preview** show `0` items during the week (Sunday through Friday) and only populate starting on **Saturdays**, because REWE publishes next week's offers and bonus discounts only on Saturdays.
 
 - **🛡️ Rate-Limiting & Anti-Ban Protections**:
